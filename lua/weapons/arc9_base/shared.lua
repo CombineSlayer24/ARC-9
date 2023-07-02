@@ -912,7 +912,7 @@ SWEP.ManualActionEjectAnyway = false -- Overrides standard behaviour to eject a 
 SWEP.ShellScale = 1
 SWEP.ShellPhysBox = Vector(0.5, 0.5, 2)
 
-SWEP.ShellPitch = 100 -- for shell sounds
+SWEP.ShellPitch = math.Rand(80, 125) -- for shell sounds
 SWEP.ShellSounds = ARC9.ShellSoundsTable
 
 SWEP.RicochetSounds = ARC9.RicochetSounds

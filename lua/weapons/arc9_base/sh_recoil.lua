@@ -117,8 +117,8 @@ function SWEP:ApplyRecoil()
 
     -- owner:SetViewPunchAngles(Angle(vis_kick_v, vis_kick_h, vis_shake))
 
-    owner:SetFOV(owner:GetFOV() * 0.99, 0)
-    owner:SetFOV(0, 60 / (self:GetProcessedValue("RPM")))
+    --owner:SetFOV(owner:GetFOV() * 0.99, 0)
+    --owner:SetFOV(0, 60 / (self:GetProcessedValue("RPM")))
 end
 
 -- local function lensqr(ang)

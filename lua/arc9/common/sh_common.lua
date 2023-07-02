@@ -30,6 +30,23 @@ ARC9.CosmeticCategories = {
     ["stickers"] = true,
 }
 ARC9.ShellSoundsTable = {
+    "arc9/casings/casingfall_metal_large.wav",
+    "arc9/casings/casingfall_metal_small.wav"
+}
+
+ARC9.PistolShellSoundsTable = {
+    "arc9/casings/casingfall_metal_large.wav",
+    "arc9/casings/casingfall_metal_small.wav"
+}
+
+
+ARC9.TinyShellSoundsTable = {
+    "arc9/casings/casingfall_metal_large.wav",
+    "arc9/casings/casingfall_metal_small.wav"
+}
+
+
+--[[ ARC9.ShellSoundsTable = {
     "arc9/casings/casing_556_1.wav",
     "arc9/casings/casing_556_2.wav",
     "arc9/casings/casing_556_3.wav",
@@ -52,7 +69,7 @@ ARC9.TinyShellSoundsTable = {
     "arc9/casings/casing_22_2.wav",
     "arc9/casings/casing_22_3.wav",
     "arc9/casings/casing_22_4.wav"
-}
+} ]]
 
 ARC9.ShotgunShellSoundsTable = {
     "arc9/casings/casing_12ga_1.wav",
