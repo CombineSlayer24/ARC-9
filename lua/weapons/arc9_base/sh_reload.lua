@@ -55,7 +55,7 @@ function SWEP:Reload()
         -- self:DoPlayerAnimationEvent(self:GetProcessedValue("AnimReload"))
     -- end
 
-    self:CallOnClient("CallNonTPIKReloadAnim", "")
+    self:CallOnClient("CallNonTPIKAnim", "AnimReload")
 
     -- self:ScopeToggle(0)
     -- self:ToggleCustomize(false)
@@ -275,7 +275,7 @@ function SWEP:GetCapacity(ubgl)
     if ubgl then
         cap = math.Round(self:GetValue("UBGLClipSize")) + math.Round(self:GetValue("UBGLChamberSize"))
     else
-        cap = math.Round(self:GetValue("ClipSize")) + math.Round(self:GetValue("ChamberSize"))
+        cap = math.Round(self:GetValue("ClipSize") or 1) + math.Round(self:GetValue("ChamberSize") or 0)
     end
 
     return cap
@@ -379,13 +379,15 @@ function SWEP:EndReload()
             capacity = self:GetProcessedValue("ClipSize")
         end
 
-        if getUBGL then
-            if !self:GetEmptyReload() or self:GetProcessedValue("ShotgunReloadIncludesChamber", true) then
-                capacity = capacity + self:GetProcessedValue("UBGLChamberSize")
-            end
-        else
-            if !self:GetEmptyReload() or self:GetProcessedValue("ShotgunReloadIncludesChamber", true) then
-                capacity = capacity + self:GetProcessedValue("ChamberSize")
+        if !self.ShotgunReloadNoChamber then
+            if getUBGL then
+                if !self:GetEmptyReload() or self:GetProcessedValue("ShotgunReloadIncludesChamber", true) then
+                    capacity = capacity + self:GetProcessedValue("UBGLChamberSize")
+                end
+            else
+                if !self:GetEmptyReload() or self:GetProcessedValue("ShotgunReloadIncludesChamber", true) then
+                    capacity = capacity + self:GetProcessedValue("ChamberSize")
+                end
             end
         end
 
@@ -471,7 +473,7 @@ function SWEP:EndReload()
     else
         self:SetReloading(false)
 
-        self:SetNthShot(0)
+        self:SetNthShot(self:GetMaxClip1() - self:Clip1() + self:GetProcessedValue("ChamberSize"))
 
         if self:GetEmptyReload() or self:GetProcessedValue("PartialReloadCountsTowardsNthReload", true) then
             self:SetNthReload(self:GetNthReload() + 1)
@@ -574,12 +576,3 @@ function SWEP:Ammo2()
     return self:GetOwner():GetAmmoCount(self:GetProcessedValue("UBGLAmmo"))
 end
 
-if CLIENT then
-    function SWEP:CallNonTPIKReloadAnim()
-        if !self:ShouldTPIK() then
-            self:DoPlayerAnimationEvent(self:GetProcessedValue("NonTPIKAnimReload", true))
-        else
-            self:DoPlayerAnimationEvent(self:GetProcessedValue("AnimReload", true))
-        end
-    end
-end

@@ -198,9 +198,8 @@ do
 
         for i = 1, affectorsCount do
             local tbl = affectors[i]
-            if tbl[val] then
-                local tblVal = tbl[val]
-
+            local tblVal = tbl[val]
+            if tblVal and isfunction(tblVal) then
                 cacheLen = cacheLen + 1
                 newCache[cacheLen] = tblVal
 
@@ -310,6 +309,8 @@ do
         if not self.ExcludeFromRawStats[val] then
             for i = 1, affectorsCount do
                 local tbl = allAffectors[i]
+                if !tbl then continue end
+                
                 local att_priority = tbl[valContCondition .. "_Priority"] or 1
 
                 if att_priority >= priority and tbl[valContCondition] ~= nil then
@@ -673,10 +674,10 @@ do
             local spd = self.PV_Move
             local maxspd = entityIsPlayer(owner) and playerGetWalkSpeed(owner) or 250
 
-            if singleplayer or CLIENT or self.PV_Tick ~= upct then
+            --if singleplayer or CLIENT or self.PV_Tick ~= upct then
                 spd = math.min(vectorLength(entityGetAbsVelocity(owner)), maxspd) / maxspd
                 self.PV_Move = spd
-            end
+            --end
 
             if isnumber(stat) then
                 stat = Lerp(spd, stat, arcGetValue(self, val, stat, "Move"))

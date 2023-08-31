@@ -5,7 +5,7 @@ local colgcvar = GetConVar("arc9_reflex_g")
 local colbcvar = GetConVar("arc9_reflex_b")
 
 function SWEP:DoHolosight(mdl, atttbl)
-    if self:GetSightAmount() <= 0 and !self:GetCustomize() then return end
+    if self:GetSightAmount() <= 0 and !self:GetCustomize() and !atttbl.HoloSightAlwaysOn then return end
     if ARC9.OverDraw then return end
     if self:GetOwner() != LocalPlayer() then return end
 
@@ -63,8 +63,12 @@ function SWEP:DoHolosight(mdl, atttbl)
 
     if reticle then
         local pos = self:GetOwner():EyePos()
-
-        pos = pos + mdl:GetAngles():Forward() * 9000
+        
+        if mdl.FakeHolosightAngleOffset then
+            pos = pos + (mdl:GetAngles() + mdl.FakeHolosightAngleOffset):Forward() * 9000
+        else
+            pos = pos + mdl:GetAngles():Forward() * 9000
+        end
 
         -- cam.Start3D()
         -- local dist = (mdl:GetPos() - self:GetOwner():EyePos()):Length()

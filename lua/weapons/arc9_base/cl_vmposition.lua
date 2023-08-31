@@ -155,9 +155,9 @@ function SWEP:GetViewModelPosition(pos, ang)
         bipodamount = math.ease.InOutQuad(bipodamount)
         local sightpos, sightang = self:GetSightPositions()
         local bipodpos, bipodang = self:GetProcessedValue("BipodPos", true), self:GetProcessedValue("BipodAng", true)
-
+        
         if bipodpos and bipodang then
-            LerpVectorEdit(math.Clamp(bipodamount - self:GetSightAmount(), 0, 1), pos, self:GetBipodPos())
+            if !self:ShouldTPIK() then LerpVectorEdit(math.Clamp(bipodamount - self:GetSightAmount(), 0, 1), pos, self:GetBipodPos()) end
             LerpVectorEdit(bipodamount, offsetpos, bipodpos)
             LerpAngleEdit(bipodamount, offsetang, bipodang)
         else
@@ -353,7 +353,7 @@ function SWEP:GetViewModelPosition(pos, ang)
         LerpAngleEdit(curvedcustomizedelta, extra_offsetang, angle_zero)
 
         if self.BottomBarMode == 1 then
-            cpos[3] = cpos[3] + 5
+            cpos[3] = cpos[3] + 2
         else
             cpos[3] = cpos[3] + 1.5
         end

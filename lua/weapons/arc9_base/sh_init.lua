@@ -10,6 +10,8 @@ local arc9_precache_attsmodels_onfirsttake = GetConVar("arc9_precache_attsmodels
 function SWEP:Initialize()
     local owner = self:GetOwner()
 
+    self.HoldTypeDefault = self.HoldType
+
     self:SetShouldHoldType()
 
     if owner:IsNPC() then
@@ -17,6 +19,7 @@ function SWEP:Initialize()
         self:NPC_Initialize()
         return
     end
+
 
     self:SetLastMeleeTime(0)
     self:SetNthShot(0)
@@ -47,7 +50,8 @@ function SWEP:Initialize()
 
     local bottomless = self:GetProcessedValue("BottomlessClip", true)
     local clip = bottomless and self:GetProcessedValue("AmmoPerShot") or self.LastClipSize
-    self.Primary.DefaultClip = clip * math.max(1, self:GetProcessedValue("SupplyLimit") + (bottomless and 0 or 1))
+    self.Primary.DefaultClip = clip + (bottomless and 0 or (self:GetProcessedValue("ChamberSize") or 0))
+    -- self.Primary.DefaultClip = clip * math.max(1, self:GetProcessedValue("SupplyLimit") + (bottomless and 0 or 1))
 
     if self.Primary.DefaultClip == 1 then -- This specific value seems to be hard-coded to not give any ammo?
         self:SetClip1(1)
@@ -59,13 +63,18 @@ function SWEP:Initialize()
         self.Secondary.DefaultClip = self:GetValue("UBGLClipSize") * math.max(1, self:GetValue("SecondarySupplyLimit") + 1)
     end
 
-    self:SetClip1(self.Primary.DefaultClip)
+    self:SetClip1(self.ClipSize > 0 and math.max(1, self.Primary.DefaultClip) or self.Primary.DefaultClip)
     self:SetClip2(self.Secondary.DefaultClip)
 
     self:SetLastLoadedRounds(self.LastClipSize)
-
-    if self:LookupPoseParameter("sights") != -1 then self.HasSightsPoseparam = true end
-    if self:LookupPoseParameter("firemode") != -1 then self.HasFiremodePoseparam = true end
+    
+    timer.Simple(0.4, function()
+        if IsValid(self) then
+            if self:LookupPoseParameter("sights") != -1 then self.HasSightsPoseparam = true end
+            if self:LookupPoseParameter("firemode") != -1 then self.HasFiremodePoseparam = true end
+            if SERVER then self:InitialDefaultClip() end
+        end
+    end)
 
     if arc9_precache_sounds_onfirsttake:GetBool() then
         ARC9.CacheWepSounds(self, self:GetClass())
@@ -200,9 +209,17 @@ function SWEP:SetShouldHoldType()
         return
     end
 
-    if self:GetInSights() then
+    if self:GetInSights() and !self:GetSafe() then
         if self:GetProcessedValue("HoldTypeSights", true) then
             self:SetHoldType(self:GetProcessedValue("HoldTypeSights", true))
+
+            return
+        end
+    end
+
+    if self:GetCustomize() then
+        if self:GetProcessedValue("HoldTypeCustomize", true) then
+            self:SetHoldType(self:GetProcessedValue("HoldTypeCustomize", true))
 
             return
         end
@@ -224,15 +241,7 @@ function SWEP:SetShouldHoldType()
         end
     end
 
-    if self:GetCustomize() then
-        if self:GetProcessedValue("HoldTypeCustomize", true) then
-            self:SetHoldType(self:GetProcessedValue("HoldTypeCustomize", true))
-
-            return
-        end
-    end
-
-    self:SetHoldType(self:GetProcessedValue("HoldType", true))
+    self:SetHoldType(self:GetProcessedValue("HoldTypeDefault", true) or self:GetValue("HoldType", true))
 end
 
 function SWEP:OnDrop()

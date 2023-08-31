@@ -50,6 +50,7 @@ function SWEP:DrawCustomModel(wm, custompos, customang)
     end
 
     if !mdl then
+        self:KillModel()
         self:SetupModel(wm, lod, !!custompos)
 
         mdl = self.VModel
@@ -71,6 +72,8 @@ function SWEP:DrawCustomModel(wm, custompos, customang)
             if model.IsAnimationProxy then continue end
             local slottbl = model.slottbl
             local atttbl = self:GetFinalAttTable(slottbl)
+
+            if !IsValid(model) then self:KillModel() return end
 
             if !onground or model.OptimizPrevWMPos != self:GetPos() then -- mega optimiz
                 model.OptimizPrevWMPos = onground and self:GetPos() or nil

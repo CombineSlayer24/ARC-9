@@ -13,7 +13,10 @@ function SWEP:EnterSights()
     if self:GetAnimLockTime() > CurTime() and !self:GetReloading() then return end -- i hope this won't cause any issues later
     if self:GetValue("UBGL") and self:GetOwner():KeyDown(IN_USE) then return end
     if self:GetIsNearWall() then return end
-    
+	if self:HasAnimation("bash") and self.SetNextAiming then
+		if self.SetNextAiming > CurTime() then return end
+	end
+	
     -- self:ToggleBlindFire(false)
     self:SetInSights(true)
     if IsFirstTimePredicted() then
@@ -26,16 +29,18 @@ function SWEP:EnterSights()
         self:PlayTranslatedSound(soundtab1)
     end
 
-    if !self:StillWaiting() then
-        if self:GetProcessedValue("InstantSightIdle", true) then
-            self:PlayAnimation("idle")
-        else
-            local anim = self:TranslateAnimation("enter_sights")
-            local mult = self:GetProcessedValue("AimDownSightsTime") -- Incorrectly uses a time as a multiplier! Preserved for legacy behavior
-            if self:GetAnimationEntry(anim).NoStatAffectors then
-                mult = 1
+    if !self:StillWaiting() or self.NoFireDuringSighting then
+        if !(self.SightIsAlsoBipodAnims and self:GetBipod()) then
+            if self:GetProcessedValue("InstantSightIdle", true) then
+                self:PlayAnimation("idle")
+            else
+                local anim = self:TranslateAnimation("enter_sights")
+                local mult = self:GetProcessedValue("AimDownSightsTime") -- Incorrectly uses a time as a multiplier! Preserved for legacy behavior
+                if self:GetAnimationEntry(anim).NoStatAffectors then
+                    mult = 1
+                end
+                self:PlayAnimation(anim, mult, self.NoFireDuringSighting, nil, nil, true)
             end
-            self:PlayAnimation(anim, mult, nil, nil, nil, true)
         end
     end
 
@@ -43,28 +48,32 @@ function SWEP:EnterSights()
 end
 
 function SWEP:ExitSights()
-    self:SetInSights(false)
+    if self:GetInSights() then
+        self:SetInSights(false)
 
-    if IsFirstTimePredicted() then
-        local soundtab1 = {
-            name = "exitsights",
-            sound = self:RandomChoice(self:GetProcessedValue("ExitSightsSound", true)),
-            channel = ARC9.CHAN_FIDDLE,
-        }
+        if IsFirstTimePredicted() then
+            local soundtab1 = {
+                name = "exitsights",
+                sound = self:RandomChoice(self:GetProcessedValue("ExitSightsSound", true)),
+                channel = ARC9.CHAN_FIDDLE,
+            }
 
-        self:PlayTranslatedSound(soundtab1)
-    end
+            self:PlayTranslatedSound(soundtab1)
+        end
 
-    if !self:StillWaiting() then
-        if self:GetProcessedValue("InstantSightIdle", true) then
-            self:PlayAnimation("idle")
-        else
-            local anim = self:TranslateAnimation("exit_sights")
-            local mult = self:GetProcessedValue("AimDownSightsTime") -- Incorrectly uses a time as a multiplier! Preserved for legacy behavior
-            if self:GetAnimationEntry(anim).NoStatAffectors then
-                mult = 1
+        if !self:StillWaiting() or (self.NoFireDuringSighting and !self:GetJammed()) then
+            if !(self.SightIsAlsoBipodAnims and self:GetBipod()) then
+                if self:GetProcessedValue("InstantSightIdle", true) then
+                    self:PlayAnimation("idle")
+                else
+                    local anim = self:TranslateAnimation("exit_sights")
+                    local mult = self:GetProcessedValue("AimDownSightsTime") -- Incorrectly uses a time as a multiplier! Preserved for legacy behavior
+                    if self:GetAnimationEntry(anim).NoStatAffectors then
+                        mult = 1
+                    end
+                    self:PlayAnimation(anim, mult, self.NoFireDuringSighting, nil, nil, true)
+                end
             end
-            self:PlayAnimation(anim, mult, nil, nil, nil, true)
         end
     end
 

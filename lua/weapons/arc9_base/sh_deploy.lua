@@ -6,6 +6,8 @@ function SWEP:Deploy()
         return
     end
 
+    self:ClientDeploy()
+
     self:InvalidateCache()
 
     self:SetBaseSettings()
@@ -51,6 +53,8 @@ function SWEP:Deploy()
     self:SetGrenadeRecovering(false)
     self:SetUBGL(false)
     self:SetLeanAmount(0)
+    
+    self.StartedFixingJam = nil
 
     self:SetGrenadePrimed(false)
 
@@ -90,9 +94,32 @@ function SWEP:Deploy()
     return true
 end
 
-function SWEP:GiveDefaultAmmo()
-    self:SetClip1(self:GetValue("ClipSize"))
-    self:GetOwner():GiveAmmo(self:GetValue("ClipSize") * 2, self:GetValue("Ammo"))
+function SWEP:ClientDeploy()
+    if SERVER then return end
+
+    if game.SinglePlayer() then
+        self:CallOnClient("ClientDeploy")
+    end
+
+    self:KillModel()
+end
+
+function SWEP:InitialDefaultClip()
+    -- self:SetClip1(self:GetValue("ClipSize"))
+    -- self:GetOwner():GiveAmmo(self:GetValue("ClipSize") * 2, self:GetValue("Ammo"))
+
+        -- arccw code winning again
+    local ammmmmo = self:GetValue("Ammo")
+    if !ammmmmo then return end
+    if engine.ActiveGamemode() == "darkrp" then return end -- DarkRP is god's second biggest mistake after gmod
+
+    if self:GetOwner() and self:GetOwner():IsPlayer() then
+        if self.ForceDefaultAmmo then
+            self:GetOwner():GiveAmmo(self.ForceDefaultAmmo, ammmmmo)
+        else
+            self:GetOwner():GiveAmmo(self:GetValue("ClipSize") * GetConVar("arc9_mult_defaultammo"):GetInt(), ammmmmo)
+        end
+    end
 end
 
 local v0 = Vector(0, 0, 0)
@@ -100,9 +127,13 @@ local v1 = Vector(1, 1, 1)
 local a0 = Angle(0, 0, 0)
 
 function SWEP:ClientHolster()
+    if SERVER then return end
+
     if game.SinglePlayer() then
         self:CallOnClient("ClientHolster")
     end
+
+    self:KillModel()
 
     local vm = self:GetVM()
 
@@ -118,7 +149,10 @@ end
 
 function SWEP:Holster(wep)
     -- May cause issues? But will fix HL2 weapons playing a wrong animation on ARC9 holster
-    if game.SinglePlayer() and CLIENT then return end
+    if !IsValid(self) then return end
+    local vm = self:GetVM()
+    if !IsValid(vm) then return end
+    if game.SinglePlayer() and CLIENT then vm:ResetSequenceInfo() return end
 
     local owner = self:GetOwner()
 
@@ -133,12 +167,6 @@ function SWEP:Holster(wep)
     end
 
     self:SetCustomize(false)
-    
-    local animdrwa = self:GetValue("AnimDraw")
-
-    if animdrwa then
-        self:DoPlayerAnimationEvent(animdrwa)
-    end
 
     if self:GetHolsterTime() > CurTime() then return false end
 
@@ -183,11 +211,18 @@ function SWEP:Holster(wep)
         -- Prepare the holster and set up the timer
         if self:HasAnimation("holster") then
             local animation = self:PlayAnimation("holster", self:GetProcessedValue("DeployTime", true, 1), true, false) or 0
-            self:SetHolsterTime(CurTime() + animation)
+			local alength = self:GetAnimationEntry(self:TranslateAnimation("holster")).MinProgress or animation
+            self:SetHolsterTime(CurTime() + alength)
             self:SetHolster_Entity(wep)
         else
             self:SetHolsterTime(CurTime() + (self:GetProcessedValue("DeployTime", true, 1)))
             self:SetHolster_Entity(wep)
+        end
+
+        local animdrwa = self:GetValue("AnimDraw")
+
+        if animdrwa then
+            self:DoPlayerAnimationEvent(animdrwa)
         end
 
         -- self:ToggleBlindFire(false)

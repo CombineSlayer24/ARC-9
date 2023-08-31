@@ -48,15 +48,22 @@ ARC9.SettingsTable = {
             {"2Disabled", "0"},
             {"3Enabled", "1"},
         }, desc = "settings.truenames.desc"},
+        { type = "button", text = "settings.resetsettings.cl.title", content = "settings.reset", func = function(self2)
+            RunConsoleCommand("arc9_settings_reset_client")
+        end},
 
         { sv = true, type = "label", text = "settings.general.server" },
         { sv = true, type = "bool", text = "settings.attachments.free_atts.title", convar = "free_atts", desc = "settings.attachments.free_atts.desc"},
         { sv = true, type = "bool", text = "settings.gameplay.infinite_ammo.title", convar = "infinite_ammo", desc = "settings.gameplay.infinite_ammo.desc" },
+        { sv = true, type = "slider", text = "settings.gameplay.mult_defaultammo.title", convar = "mult_defaultammo", min = 0, max = 16, decimals = 0, desc = "settings.gameplay.mult_defaultammo.desc" },
         { sv = true, type = "combo", text = "settings.truenames_default.title", convar = "truenames_default", content = {
             {"1Disabled", "0"},
             {"2Enabled", "1"},
         }, desc = "settings.truenames_default.desc"},
         { sv = true, type = "bool", text = "settings.truenames_enforced.title", convar = "truenames_enforced", desc = "settings.truenames_enforced.desc"},
+        { sv = true, type = "button", text = "settings.resetsettings.sv.title", content = "settings.reset", func = function(self2)
+            RunConsoleCommand("arc9_settings_reset_server")
+        end},
 
     },
     {
@@ -88,6 +95,7 @@ ARC9.SettingsTable = {
         -- { type = "bool", text = "settings.cheapscopes.title", convar = "cheapscopes", desc = "settings.cheapscopes.desc"},
 
         { type = "label", text = "settings.optics.control" },
+		{ type = "slider", text = "settings.optics.sensmult.title", min = 0.1, max = 1, decimals = 1, convar = "mult_sens", desc = "settings.optics.sensmult.desc" },
         { type = "bool", text = "settings.optics.compensate_sens.title", convar = "compensate_sens", desc = "settings.optics.compensate_sens.desc" },
         { type = "bool", text = "settings.optics.toggleads.title", convar = "toggleads", desc = "settings.optics.toggleads.desc" },
 
@@ -171,7 +179,11 @@ ARC9.SettingsTable = {
         { type = "label", text = "settings.hud_game.breath" },
         { type = "bool", text = "settings.hud_game.breath_hud.title", convar = "breath_hud", desc = "settings.hud_game.breath_hud.desc" },
         { type = "bool", text = "settings.hud_game.breath_pp.title", convar = "breath_pp", desc = "settings.hud_game.breath_pp.desc" },
-        { type = "bool", text = "settings.hud_game.breath_sfx.title", convar = "breath_sfx", desc = "settings.hud_game.breath_sfx.desc" },
+
+        { type = "label", text = "settings.hud_game.centerhint" },
+        { type = "bool", text = "settings.hud_game.centerhint_reload.title", convar = "center_reload_enable", desc = "settings.hud_game.centerhint_reload.desc" },
+        { type = "slider", min = 0, max = 1, decimals = 2, text = "settings.hud_game.centerhint_reload_percent.title", convar = "center_reload", desc = "settings.hud_game.centerhint_reload_percent.desc" },
+        { type = "bool", text = "settings.hud_game.centerhint_bipod.title", convar = "center_bipod", desc = "settings.hud_game.centerhint_bipod.desc" },
     },
     {
         TabName = "settings.tabname.npc",
@@ -201,10 +213,12 @@ ARC9.SettingsTable = {
         { sv = true, type = "bool", text = "settings.gameplay.lean.title", convar = "lean", desc = "settings.gameplay.lean.desc" },
         { sv = true, type = "bool", text = "settings.gameplay.mod_sway.title", convar = "mod_sway", desc = "settings.gameplay.mod_sway.desc" },
         { sv = true, type = "bool", text = "settings.gameplay.mod_freeaim.title", convar = "mod_freeaim", desc = "settings.gameplay.mod_freeaim.desc" },
-        -- { sv = true, type = "bool", text = "settings.gameplay.mod_bodydamagecancel.title", convar = "mod_bodydamagecancel", desc = "settings.gameplay.mod_bodydamagecancel.desc" },
+        { sv = true, type = "bool", text = "settings.gameplay.mod_bodydamagecancel.title", convar = "mod_bodydamagecancel", desc = "settings.gameplay.mod_bodydamagecancel.desc" },
         { sv = true, type = "bool", text = "settings.gameplay.breath_slowmo.title", convar = "breath_slowmo", desc = "settings.gameplay.breath_slowmo.desc" },
         { sv = true, type = "bool", text = "settings.gameplay.manualbolt.title", convar = "manualbolt", desc = "settings.gameplay.manualbolt.desc" },
         { sv = true, type = "bool", text = "settings.gameplay.never_ready.title", convar = "never_ready", desc = "settings.gameplay.never_ready.desc" },
+        { sv = true, type = "bool", text = "settings.gameplay.recoilshake.title", convar = "recoilshake", desc = "settings.gameplay.recoilshake.desc" },
+        { sv = true, type = "bool", text = "settings.gameplay.equipment_generate_ammo.title", convar = "equipment_generate_ammo", desc = "settings.gameplay.equipment_generate_ammo.desc" },
         -- { type = "bool", text = "", convar = "nearwall", desc = "" },
         -- random jams
         -- overheating
@@ -290,7 +304,7 @@ ARC9.SettingsTable = {
         TabName = "settings.tabname.controller",
         { type = "label", text = "settings.controller.misc", desc = "settings.controller.misc.desc"},
         { type = "bool", text = "settings.controller.controller.title", convar = "controller", desc = "settings.controller.controller.desc"},
-        { type = "bool", text = "settings.controller.controller_rumble.title", convar = "controller_rumble", desc = "settings.controller.controller_rumble.desc"},
+        -- { type = "bool", text = "settings.controller.controller_rumble.title", convar = "controller_rumble", desc = "settings.controller.controller_rumble.desc"},
         -- { type = "button", text = "settings.controller.controller_config.title", desc = "settings.controller.controller_config.desc", content = "settings.controller.controller_config.content", func = function(self2)
         --     -- RunConsoleCommand("arc9_reloadatts")
         --     print("lol")
@@ -440,7 +454,7 @@ local function DrawSettings(bg, page)
                 surface.DrawText(txt)
             end
 
-            local elpw, elph = ARC9ScreenScale(168), ARC9ScreenScale(21)
+            local elpw, elph = bg:GetWide() - ARC9ScreenScale(232), ARC9ScreenScale(21)
 
             if v2.type == "label" then
                 -- woopsie
@@ -599,19 +613,42 @@ local function DrawSettings(bg, page)
         surface.SetTextPos(w-ARC9ScreenScale(96), ARC9ScreenScale(26))
         surface.DrawText(activedesc != "" and ARC9:GetPhrase("settings.desc") or "") -- no title if no desc
         
-        if activecvar != "" then
+        if activecvar != "" then -- display the cvar at the bottom of the description page
             local freshcvar = ""
 
             if !GetConVar(activecvar) and GetConVar(activecvar .. "_r") then 
-                freshcvar = activecvar .. "_r/_g/_b" .. (GetConVar(activecvar .. "_a") and "_a" or "")
+                freshcvar = activecvar .. "_r/_g/_b" .. (GetConVar(activecvar .. "_a") and "/_a" or "")
             else
                 freshcvar = activecvar .. " " .. (GetConVar(activecvar):GetString() or "")
             end
 
             local tw = surface.GetTextSize(freshcvar)
-            surface.SetTextColor(ARC9.GetHUDColor("hint"))
-            surface.SetTextPos(w-ARC9ScreenScale(49)-tw/2, h-ARC9ScreenScale(16))
+            surface.SetTextColor(ARC9.GetHUDColor("fg"))
+            surface.SetTextPos(w-ARC9ScreenScale(90), h-ARC9ScreenScale(30))
             surface.DrawText(freshcvar)
+
+			if !GetConVar(activecvar) and GetConVar(activecvar .. "_r") then -- also display the default value of said cvar
+			
+				if GetConVar(activecvar .. "_a") then ifalpha = "," .. GetConVar(activecvar .. "_a"):GetDefault() else ifalpha = "" end -- check if an alpha convar also exists
+				
+				if string.len(ARC9:GetPhrase("settings.default_convar")) > 17 then -- if the string is over 17 characters long, then make it two value displays
+					defaultvalue = GetConVar(activecvar .. "_r"):GetDefault() .. "," .. GetConVar(activecvar .. "_g"):GetDefault() .. ","
+					defaultvalue2 = GetConVar(activecvar .. "_b"):GetDefault() .. ifalpha
+				else -- otherwise, only use one
+					defaultvalue = GetConVar(activecvar .. "_r"):GetDefault() .. "," .. GetConVar(activecvar .. "_g"):GetDefault() .. "," .. GetConVar(activecvar .. "_b"):GetDefault() .. ifalpha
+					defaultvalue2 = ""
+				end
+			else
+				defaultvalue = GetConVar(activecvar):GetDefault()
+				defaultvalue2 = ""
+			end
+
+            surface.SetTextColor(ARC9.GetHUDColor("hint"))
+            surface.SetTextPos(w-ARC9ScreenScale(90), h-ARC9ScreenScale(22.5))
+            surface.DrawText(ARC9:GetPhrase("settings.default_convar") .. ": " .. defaultvalue)
+
+            surface.SetTextPos(w-ARC9ScreenScale(90), h-ARC9ScreenScale(15))
+            surface.DrawText(defaultvalue2)
         end
 
         surface.SetFont("ARC9_16")
@@ -657,7 +694,7 @@ function ARC9_OpenSettings(page)
 
     local panel = vgui.Create("DFrame", bg)
     -- panel:SetSize(ARC9ScreenScale(330), ARC9ScreenScale(242))
-    panel:SetSize(ARC9ScreenScale(400), ARC9ScreenScale(242))
+    panel:SetSize(ScrH()*1.25, ScrH()*0.75)
     panel:MakePopup()
     panel:SetAlpha(0)
     panel:AlphaTo(255, 0.2, 0, nil)

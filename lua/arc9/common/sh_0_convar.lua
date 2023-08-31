@@ -1,5 +1,15 @@
 local conVars = {
     {
+        name = "cruelty_reload",
+        default = "0",
+        client = true
+    },
+    {
+        name = "cruelty_reload_april_fools",
+        default = "0",
+        client = true
+    },
+    {
         name = "allflash",
         default = "0",
         client = true
@@ -287,6 +297,21 @@ local conVars = {
     {
         name = "dev_crosshair",
         default = "0",
+    },
+    {
+        name = "center_bipod",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "center_reload_enable",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "center_reload",
+        default = "0.25",
+        client = true,
     },
     {
         name = "breath_hud",
@@ -715,14 +740,37 @@ local conVars = {
         default = "0",
         client = true,
     },
+    {
+        name = "recoilshake",
+        default = "1",
+    },
+    {
+        name = "equipment_generate_ammo",
+        default = "1",
+        replicated = true
+    },
+    {
+        name = "mult_defaultammo",
+        default = "2",
+        replicated = true
+    },
+    {
+        name = "mult_sens",
+        default = "1",
+        client = true
+    },
 }
 
 local prefix = "arc9_"
+
+local torevertlist_cl = {}
+local torevertlist_sv = {}
 
 for _, var in pairs(conVars) do
     local convar_name = prefix .. var.name
 
     if var.client and CLIENT then
+        table.insert(torevertlist_cl, convar_name)
         CreateClientConVar(convar_name, var.default, true, var.userinfo)
     else
         local flags = FCVAR_ARCHIVE
@@ -732,9 +780,24 @@ for _, var in pairs(conVars) do
         if var.userinfo then
             flags = flags + FCVAR_USERINFO
         end
+        table.insert(torevertlist_sv, convar_name)
         CreateConVar(convar_name, var.default, flags, var.helptext, var.min, var.max)
     end
 end
+
+if CLIENT then
+    concommand.Add("arc9_settings_reset_client", function()
+        for _, var in pairs(torevertlist_cl) do
+            RunConsoleCommand(var, GetConVar(var):GetDefault()) -- :Revert() wont work!!!!!!!!! ghhh
+        end
+    end, nil, "Reset all client ARC9 settings.")
+end
+
+concommand.Add("arc9_settings_reset_server", function()
+    for _, var in pairs(torevertlist_sv) do
+        GetConVar(var):Revert()
+    end
+end, nil, "Reset all server ARC9 settings.")
 
 if SERVER then
     util.AddNetworkString("ARC9_InvalidateAll")
@@ -973,8 +1036,8 @@ local function menu_client_controller(panel)
     panel:AddControl( "header", { description = "Replace key names with controller glyphs." } )
     panel:CheckBox("Engage Super Controller Mode", "arc9_controller")
     panel:ControlHelp( "Activate controller-focused features in ARC9.\n- Keys are replaced with their bindnames.\n- Jump and reload are used as Select and Deselect, respectively." )
-    panel:CheckBox("Controller Rumble w/ SInput", "arc9_controller_rumble")
-    panel:ControlHelp( "Use Fesiug's SInput to interact with ARC9.\nFound at github.com/Fesiug/gmod-sinput" )
+    -- panel:CheckBox("Controller Rumble w/ SInput", "arc9_controller_rumble")
+    -- panel:ControlHelp( "Use Fesiug's SInput to interact with ARC9.\nFound at github.com/Fesiug/gmod-sinput" )
     local listview = vgui.Create("DListView", panel)
     listview:SetSize( 99, 200 )
     panel:AddItem( listview )
@@ -984,6 +1047,7 @@ local function menu_client_controller(panel)
 
     local tex_inp = vgui.Create( "DTextEntry", panel )
     local tex_out = vgui.Create( "DTextEntry", panel )
+    panel:ControlHelp( "Double-click to copy into text fields" )
     panel:AddItem( tex_inp )
     panel:ControlHelp( "Glyph or keyboard icon to be replaced.\nInputs are case-sensitive!" )
     panel:AddItem( tex_out )
@@ -994,24 +1058,53 @@ local function menu_client_controller(panel)
     local but_add = vgui.Create( "DButton", panel )
     local but_rem = vgui.Create( "DButton", panel )
     local but_upd = vgui.Create( "DButton", panel )
+    but_upd:Hide()
     local but_app = vgui.Create( "DButton", panel )
+    but_app:Hide()
     panel:AddItem( but_add )
     panel:AddItem( but_rem )
     panel:AddItem( but_upd )
     panel:AddItem( but_app )
-    but_add:SetText("Add")
+    but_add:SetText("Add & apply")
     but_rem:SetText("Remove selected")
     but_upd:SetText("Restore from memory")
-    but_app:SetText("Save & apply")
+    but_app:SetText("Apply")
+
+	function listview:DoDoubleClick( lineID, line )
+		tex_inp:SetValue( line:GetColumnText( 1 ) )
+		tex_out:SetValue( line:GetColumnText( 2 ) )
+	end
+
+	function listview:OnRowRightClick( lineID, line )
+		local menu = DermaMenu()
+		menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
+		menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
+		menu:Open()
+	end
 
     function but_add:DoClick()
-        listview:AddLine( string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue()) )
+        local inp, out = string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue())
+        if inp == "" then return end
+        if out == "" then return end
+        local worked = false
+        for index, line in ipairs( listview:GetLines() ) do
+            if line:GetColumnText( 1 ) == inp then
+                line:SetColumnText( 2, out )
+                worked = true
+                break
+            end
+        end
+        if !worked then
+            listview:AddLine( inp, out )
+        end
+        but_app:DoClick()
     end
 
     function but_rem:DoClick()
         for i, v in pairs(listview:GetSelected()) do
             listview:RemoveLine( v:GetID() )
         end
+        but_app:DoClick()
     end
 
     function but_upd:DoClick()
@@ -1066,17 +1159,7 @@ local function menu_client_controller(panel)
 
                 -- Run a console command when the Icon is clicked
                 Mat.DoClick = function( button )
-                    local menu = DermaMenu()
-                    menu:AddOption( "As input", function() self.InputPanel:SetValue( label ) end ):SetIcon( "icon16/page_copy.png" )
-                    menu:AddOption( "As output", function() self.OutputPanel:SetValue( label ) end ):SetIcon( "icon16/page_paste.png" )
-                    menu:Open()
-                end
-
-                Mat.DoRightClick = function( button )
-                    local menu = DermaMenu()
-                    menu:AddOption( "As input", function() self.InputPanel:SetValue( label ) end ):SetIcon( "icon16/page_copy.png" )
-                    menu:AddOption( "As output", function() self.OutputPanel:SetValue( label ) end ):SetIcon( "icon16/page_paste.png" )
-                    menu:Open()
+                    self.OutputPanel:SetValue( label )
                 end
 
                 -- Add the Icon us
@@ -1091,7 +1174,7 @@ local function menu_client_controller(panel)
         for k, v in SortedPairs( ARC9.CTRL_Exists ) do
             local sel, seldata = matselect_filter:GetSelected()
             if string.find( k, seldata or "" ) then
-                matselect:AddMaterial( k, "arc9/glyphs_light/" .. k .. "_lg.png" )
+                matselect:AddMaterial( k, "arc9/glyphs_dark/" .. k .. "_lg.png" )
             end
         end
 
@@ -1265,6 +1348,7 @@ c1 = {
     ["VisualRecoilRoll"] = true,
     ["VisualRecoilPunch"] = true,
     ["BreathHoldTime"] = true,
+    ["BashSpeed"] = true,
 }
 
 c2 = {
@@ -1295,6 +1379,7 @@ c3 = {
 }
 
 local function menu_server_modifiers(panel)
+    panel:AddControl( "header", { description = "Add ANY modifier with ANY special conditions." } )
     local listview = vgui.Create("DListView", panel)
     listview:SetSize( 99, 200 )
     panel:AddItem( listview )
@@ -1304,6 +1389,7 @@ local function menu_server_modifiers(panel)
 
     local tex_inp = vgui.Create( "DTextEntry", panel )
     local tex_out = vgui.Create( "DTextEntry", panel )
+    panel:ControlHelp( "Double-click to copy into text fields" )
     panel:AddItem( tex_inp )
     panel:AddItem( tex_out )
     tex_inp:SetPlaceholderText("Use the first list to select a stat to modify")
@@ -1318,6 +1404,11 @@ local function menu_server_modifiers(panel)
     panel:ControlHelp( "Modification type. Some stats don't have these." )
     panel:AddItem( com_3 )
     panel:ControlHelp( "Special condition, like if you're crouching." )
+
+	function listview:DoDoubleClick( lineID, line )
+		tex_inp:SetValue( line:GetColumnText( 1 ) )
+		tex_out:SetValue( line:GetColumnText( 2 ) )
+	end
 
     for i, v in pairs(c1) do
         com_1:AddChoice( i )
@@ -1344,15 +1435,17 @@ local function menu_server_modifiers(panel)
     local but_add = vgui.Create( "DButton", panel )
     local but_rem = vgui.Create( "DButton", panel )
     local but_upd = vgui.Create( "DButton", panel )
+    but_upd:Hide()
     local but_app = vgui.Create( "DButton", panel )
+    but_app:Hide()
     panel:AddItem( but_add )
     panel:AddItem( but_rem )
     panel:AddItem( but_upd )
     panel:AddItem( but_app )
-    but_add:SetText("Add")
+    but_add:SetText("Add & apply")
     but_rem:SetText("Remove selected")
     but_upd:SetText("Restore from memory")
-    but_app:SetText("Save & apply")
+    but_app:SetText("Apply")
 
     panel:ControlHelp( "Examples:" )
     panel:ControlHelp( " - \"Overheat\" \"true\" to disable overheating." )
@@ -1360,14 +1453,36 @@ local function menu_server_modifiers(panel)
     panel:ControlHelp( " - \"RecoilMultCrouch\" \"0.1\" to reduce recoil to 10% when crouching." )
     panel:ControlHelp( " - \"RPMMultOddShot\" \"0.5\" to make every other shot 600RPM." )
 
+	function listview:OnRowRightClick( lineID, line )
+		local menu = DermaMenu()
+		menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
+		menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
+		menu:Open()
+	end
+
     function but_add:DoClick()
-        listview:AddLine( string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue()) )
+        local inp, out = string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue())
+        if inp == "" then return end
+        if out == "" then return end
+        local worked = false
+        for index, line in ipairs( listview:GetLines() ) do
+            if line:GetColumnText( 1 ) == inp then
+                line:SetColumnText( 2, out )
+                worked = true
+                break
+            end
+        end
+        if !worked then
+            listview:AddLine( inp, out )
+        end
+        but_app:DoClick()
     end
 
     function but_rem:DoClick()
         for i, v in pairs(listview:GetSelected()) do
             listview:RemoveLine( v:GetID() )
         end
+        but_app:DoClick()
     end
 
     function but_upd:DoClick()
@@ -1404,7 +1519,7 @@ end )
 
 local clientmenus_ti = {
     {
-        text = "REAL SETTINGS here", func = menu_arc9_settings
+        text = "REAL Settings", func = menu_arc9_settings
     },
     -- {
     --     text = "Client", func = menu_client_ti
@@ -1413,7 +1528,7 @@ local clientmenus_ti = {
     --     text = "Client - Customization", func = menu_client_customization
     -- },
     {
-        text = "Controller", func = menu_client_controller
+        text = "Super Controller", func = menu_client_controller
     },
     -- {
     --     text = "Client - Crosshair", func = menu_client_crosshair
@@ -1431,7 +1546,7 @@ local clientmenus_ti = {
     --     text = "Server - Ballistics", func = menu_server_ballistics
     -- },
     {
-        text = "Modifiers", func = menu_server_modifiers
+        text = "Super Modifiers", func = menu_server_modifiers
     },
 }
 

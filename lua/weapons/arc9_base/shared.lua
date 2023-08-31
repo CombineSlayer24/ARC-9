@@ -109,6 +109,7 @@ SWEP.WorldModelOffset = nil
 --     Scale = 1
 -- }
 SWEP.NoTPIK = false
+SWEP.MirrorVMWMHeldOnly = false -- If true, MirrorVMWM is not activated when weapon is on the ground.
 
 SWEP.TPIKParentToSpine4 = nil -- TPIK makes VM origin on right hand (which is located different on each holdtype, crouch jump run etc). Set to true if you want vm origin on spine bone
 SWEP.TPIKforcelefthand = nil -- TPIK does not do left hand when you have one of this holdtypes: slam magic pistol normal. Set to true to still do lhand tpik for those
@@ -118,6 +119,7 @@ SWEP.Material = ""
 SWEP.Crosshair = false
 SWEP.LauncherCrosshair = false -- Force the launcher crosshair
 SWEP.MissileCrosshair = false -- Force the missile launcher crosshair
+SWEP.ForceStandardCrosshair = nil -- Force default + or T crosshair no matter what!
 
 SWEP.ViewModelFOVBase = nil -- Set to override viewmodel FOV
 
@@ -190,6 +192,7 @@ end
 ]]--
 
 SWEP.Num = 1 -- Number of bullets to shoot
+SWEP.NumUBGL = 1 -- Fixes broken UBGLs firing multiple entities when not defined properly in their LUAs
 
 SWEP.DistributeDamage = false -- If true, damage is distributed evenly across all bullets. If false, damage is dealt to the first bullet only.
 SWEP.NormalizeNumDamage = false -- If true, total damage will not change if Num is modified. Does not work with DistributeDamage.
@@ -322,6 +325,7 @@ SWEP.ShotgunReload = false -- Weapon reloads like shotgun. Uses insert_1, insert
 SWEP.HybridReload = false -- Enable on top of Shotgun Reload. If the weapon is completely empty, use the normal reload animation.
 -- Use SWEP.Hook_TranslateAnimation in order to do custom animation stuff.
 SWEP.ShotgunReloadIncludesChamber = true -- Shotguns reload to full capacity, assuming that the chamber is loaded as part of the animation.
+SWEP.ShotgunReloadNoChamber = false -- No chambering at all on shotgun reloading
 
 SWEP.ManualActionChamber = 1 -- How many shots we go between needing to cycle again.
 SWEP.ManualAction = false -- Pump/bolt action. Play the "cycle" animation after firing, when the trigger is released.
@@ -418,11 +422,6 @@ SWEP.Recoil = 1
 -- These multipliers affect the predictible recoil by making the pattern taller, shorter, wider, or thinner.
 SWEP.RecoilUp = 1 -- Multiplier for vertical recoil
 SWEP.RecoilSide = 1 -- Multiplier for vertical recoil
-
--- This is for recoil that goes directly to camera, makes gun shoot where sights at but center of screen will be in different place. Like escape from t
-SWEP.ViewRecoil = nil -- true
-SWEP.ViewRecoilUpMult = nil -- 40-100
-SWEP.ViewRecoilSideMult = nil -- 1-20
 
 -- These values determine how much extra movement is applied to the recoil entirely randomly, like in a circle.
 -- This type of recoil CANNOT be predicted.
@@ -580,6 +579,8 @@ SWEP.PreBashTime = 0.5
 SWEP.PostBashTime = 0.5
 SWEP.BashDamageType = DMG_CLUB
 SWEP.BashDecal = "ManhackCut"
+
+SWEP.BashSpeed = 1
 
 SWEP.BashWhileSprint = false -- Unlike ShootWhileSprint, this will not require transitioning out of sprint state (and waiting the sprinttofire delay)
 
@@ -840,6 +841,9 @@ SWEP.ShootSoundLoopingIndoor = nil
 SWEP.ShootSoundTail = nil -- played after the loop ends
 SWEP.ShootSoundTailIndoor = nil
 
+SWEP.IndoorSoundHardCutoff = false
+SWEP.IndoorSoundHardCutoffRatio = 0.5
+
 SWEP.Silencer = false -- Silencer installed or not?
 
 SWEP.DistantShootSound = nil
@@ -1083,7 +1087,8 @@ SWEP.AnimShoot = ACT_HL2MP_GESTURE_RANGE_ATTACK_AR2
 SWEP.AnimReload = ACT_HL2MP_GESTURE_RELOAD_MAGIC -- While in TPIK only -- Tip: if you dont want any additional anim put ACT_HL2MP_GESTURE_RELOAD_MAGIC here instead!
 SWEP.NonTPIKAnimReload = ACT_HL2MP_GESTURE_RELOAD_AR2 -- Non TPIK
 SWEP.AnimDraw = false
-SWEP.AnimMelee = ACT_GMOD_GESTURE_MELEE_SHOVE_2HAND
+SWEP.AnimMelee = ACT_FLINCH_PHYSICS
+SWEP.NonTPIKAnimMelee = ACT_GMOD_GESTURE_MELEE_SHOVE_2HAND
 
 -------------------------- Shields
 
@@ -1395,6 +1400,10 @@ SWEP.SuppressCumulativeShoot = false -- fire_1, fire_2, and fire_3 will not auto
 SWEP.InstantSprintIdle = false -- Instantly go to idle_sprint instead of playing enter_sprint.
 SWEP.InstantSightIdle = false -- Instantly go to idle_sights instead of playing enter_sights.
 
+SWEP.NoFireDuringSighting = false -- Makes enter_sights and exit_sights be important animations, no fire and other anims allowed. Slightly changes jam behaviour
+SWEP.SightIsAlsoBipodAnims = false -- Weapons on bipod will use _sights suffix instead of _bipod
+SWEP.UnbipodOnLockAnims = false -- Reloads/jams/draw/holsters/etc will unbipod weapon (but still call _bipod (or _sights ^) version of anim) without calling exit_bipod/exit_sights
+
 SWEP.Primary.Automatic = true
 SWEP.Primary.DefaultClip = -1
 
@@ -1455,14 +1464,10 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 6, "SprintAmount")
     self:NetworkVar("Float", 7, "LastMeleeTime")
     self:NetworkVar("Float", 8, "TriggerDelay")
-    --self:NetworkVar("Float", 8, "PrimedAttackTime")
-    --self:NetworkVar("Float", 9, "StartPrimedAttackTime")
     self:NetworkVar("Float", 10, "ReloadFinishTime")
     self:NetworkVar("Float", 11, "SightAmount")
     self:NetworkVar("Float", 12, "HeatAmount")
     self:NetworkVar("Float", 13, "MeleeAttackTime")
-    -- self:NetworkVar("Float", 13, "BlindFireAmount")
-    -- self:NetworkVar("Float", 14, "LastPressedETime")
     self:NetworkVar("Float", 14, "FinishFiremodeAnimTime")
     self:NetworkVar("Float", 15, "IKTimeLineStart")
     self:NetworkVar("Float", 16, "IKTime")
@@ -1478,8 +1483,6 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 26, "LeanAmount")
     self:NetworkVar("Float", 27, "NearWallAmount")
     self:NetworkVar("Float", 28, "ReadyTime")
-    -- self:NetworkVar("Float", 19, "LastPressedWTime")
-    -- self:NetworkVar("Float", 20, "TraversalSprintAmount")
 
     self:NetworkVar("Int", 0, "BurstCount")
     self:NetworkVar("Int", 1, "NthShot")
@@ -1526,13 +1529,15 @@ function SWEP:SetupDataTables()
 
     self:NetworkVar("Angle", 0, "FreeAimAngle")
     self:NetworkVar("Angle", 1, "LastAimAngle")
-    self:NetworkVar("Angle", 2, "VisualRecoilAng")
-    self:NetworkVar("Angle", 3, "VisualRecoilVel")
-    self:NetworkVar("Angle", 4, "BipodAng")
+    self:NetworkVar("Angle", 2, "BipodAng")
 
     self:NetworkVar("Vector", 0, "VisualRecoilPos")
     self:NetworkVar("Vector", 1, "VisualRecoilPosVel")
-    self:NetworkVar("Vector", 2, "BipodPos")
+    self:NetworkVar("Vector", 2, "VisualRecoilPosAcc")
+    self:NetworkVar("Vector", 3, "BipodPos")
+    self:NetworkVar("Vector", 4, "VisualRecoilAng")
+    self:NetworkVar("Vector", 5, "VisualRecoilVel")
+    self:NetworkVar("Vector", 6, "VisualRecoilAcc")
 
     self:NetworkVar("String", 0, "IKAnimation")
 
@@ -1542,37 +1547,52 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Entity", 3, "LockOnTarget")
     self:NetworkVar("Entity", 4, "DetonatorEntity")
 
-    self:SetVisualRecoilAng(Angle(0, 0 ,0))
-    self:SetVisualRecoilVel(Angle(0, 0, 0))
+    self:SetVisualRecoilAng(Vector(0, 0 ,0))
+    self:SetVisualRecoilVel(Vector(0, 0, 0))
+    self:SetVisualRecoilAcc(Vector(0, 0, 0))
 
     self:SetVisualRecoilPos(Vector(0, 0, 0))
     self:SetVisualRecoilPosVel(Vector(0, 0, 0))
+    self:SetVisualRecoilPosAcc(Vector(0, 0, 0))
 
     self:SetMultiSight(1)
     self:SetLastWasSprinting(false)
-    self:SetEnterBipodTime(0)
     self:SetBreath(100)
     self:SetOutOfBreath(false)
     self:SetFiremode(1)
     self:SetAfterShot(false)
     self:SetGrenadePrimed(false)
 
-    self:SetRecoilUp(0)
-    self:SetRecoilSide(0)
-
-    self:SetLastRecoilTime(0)
-
-    self:SetAnimLockTime(0)
     self:SetNextPrimaryFire(0)
     self:SetNextSecondaryFire(0)
-    self:SetNextIdle(0)
+
     self:SetRecoilAmount(0)
+    self:SetAnimLockTime(0)
+    self:SetNextIdle(0)
+    self:SetLastRecoilTime(0)
+    self:SetRecoilUp(0)
+    self:SetRecoilSide(0)
+    self:SetSprintAmount(0)
     self:SetLastMeleeTime(0)
-    self:SetEnterBipodTime(0)
-    self:SetFinishFiremodeAnimTime(0)
+    self:SetTriggerDelay(0)
     self:SetReloadFinishTime(0)
+    self:SetSightAmount(0)
+    self:SetHeatAmount(0)
+    self:SetMeleeAttackTime(0)
+    self:SetFinishFiremodeAnimTime(0)
+    self:SetIKTimeLineStart(0)
+    self:SetIKTime(0)
+    self:SetHolsterTime(0)
+    self:SetBlindFireCornerAmount(0)
+    self:SetEnterBipodTime(0)
+    self:SetSequenceCycle(0)
+    self:SetSequenceSpeed(0)
     self:SetLastHolsterTime(0)
-    self:SetNthReload(0)
+    self:SetGrenadePrimedTime(0)
+    self:SetLockOnStartTime(0)
+    self:SetLeanAmount(0)
+    self:SetNearWallAmount(0)
+    self:SetReadyTime(0)
 end
 
 function SWEP:SecondaryAttack()

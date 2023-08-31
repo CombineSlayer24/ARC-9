@@ -1,5 +1,3 @@
-if CLIENT then return end
-
 
 local pistolammotypes = {
     ["pistol"] = true,
@@ -81,9 +79,15 @@ local arc9_replace_spawned = GetConVar("arc9_replace_spawned")
 function ARC9.ReplaceSpawnedWeapon(ent)
     if CLIENT then return end
 
+    if !(ent:IsNPC() or ent:IsWeapon()) then return end
+
+    -- print("tried to replcae", ent, CurTime())
+
+    local fuckingtimer = (CurTime() < 5 and 1.5 or 0)
+
     if ent:IsNPC() then
         if !arc9_npc_autoreplace:GetBool() then return end
-        timer.Simple(0, function()
+        timer.Simple(0.1 + fuckingtimer, function()
             if !ent:IsValid() then return end
             local cap = ent:CapabilitiesGet()
 
@@ -94,6 +98,8 @@ function ARC9.ReplaceSpawnedWeapon(ent)
             if IsValid(ent:GetActiveWeapon()) then
                 class = ent:GetActiveWeapon():GetClass()
             end
+
+            if !class then return end
 
             if ARC9.HL2Replacements[class] then
                 local weptbl = ARC9.HL2Replacements[class]
@@ -107,7 +113,7 @@ function ARC9.ReplaceSpawnedWeapon(ent)
         end)
     elseif ent:IsWeapon() then
         if !arc9_replace_spawned:GetBool() then return end
-        timer.Simple(0, function()
+        timer.Simple(0.1 + fuckingtimer, function()
             if !ent:IsValid() then return end
             if IsValid(ent:GetOwner()) then return end
             if ent.ARC9 then return end

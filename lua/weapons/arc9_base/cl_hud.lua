@@ -146,6 +146,8 @@ function SWEP:DoDrawCrosshair(x, y)
     if self:GetSprintAmount() > 0 then return true end
     if self:GetReloading() then return true end
 
+    local forcestd = self:GetProcessedValue("ForceStandardCrosshair", true)
+
     if self:GetProcessedValue("MissileCrosshair", true) then
         -- local dotcount = 4
 
@@ -177,7 +179,7 @@ function SWEP:DoDrawCrosshair(x, y)
 
         drawshadowrect(x - gap * -1 - (dotsize / 2), y - gap * 2.75 - (dotsize / 2), gap * 1, dotsize, col)
         drawshadowrect(x - gap * -1 - (dotsize / 2), y + gap * 2.75 - (dotsize / 2), gap * 1, dotsize, col)
-    elseif self:GetProcessedValue("ShootEnt", true) or self:GetProcessedValue("LauncherCrosshair", true) then
+    elseif (self:GetProcessedValue("ShootEnt", true) or self:GetProcessedValue("LauncherCrosshair", true)) and !forcestd then
         if mode > 1 then
             drawshadowrect(x - (dotsize / 2) - gap - miniprong_2, y - (dotsize / 2), miniprong_2, dotsize, col)
             drawshadowrect(x - (dotsize / 2) - gap - miniprong_2 - minigap - miniprong_1, y - (dotsize / 2), miniprong_1, dotsize, col)
@@ -211,7 +213,7 @@ function SWEP:DoDrawCrosshair(x, y)
 
         drawshadowrect(x - (dotsize / 2) - (minigap * 2), y - (dotsize / 2) + gap + (staticgap * 5.5), dotsize, dotsize, col)
         drawshadowrect(x - (dotsize / 2) + (minigap * 2), y - (dotsize / 2) + gap + (staticgap * 5.5), dotsize, dotsize, col)
-    elseif self:GetProcessedValue("Num", true) > 1 then
+    elseif self:GetProcessedValue("Num", true) > 1 and !forcestd then
         local dotcount = 10
 
         for i = 1, dotcount do
@@ -269,10 +271,47 @@ end
 local bipodhint = 0 -- alpha
 local bipodhintstate = false -- enter or exit
 
+local cv1, cv2, cv3, cv4
+
 function SWEP:DrawHUD()
     self:RunHook("Hook_HUDPaintBackground")
     local scrw, scrh = ScrW(), ScrH()
     local getsight = self:GetSight()
+
+	cv4 = cv4 or GetConVar("arc9_center_reload_enable")
+	cv1 = cv1 or GetConVar("arc9_center_reload")
+
+    local ubgl = self:GetUBGL()
+	local rel = self:GetReloading()
+	local throw = self.Throwable
+	local primbash = self.PrimaryBash
+
+	if !ubgl then
+		mag = self:Clip1() <= self:GetMaxClip1()*cv1:GetFloat()
+	else
+		mag = self:Clip2() <= self:GetMaxClip2()*cv1:GetFloat()
+	end
+
+    if (cv4:GetBool() and (cv1:GetFloat() > 0.02)) then
+		if !rel and !throw and !primbash and mag then
+			local glyph = ARC9.GetBindKey("+reload")
+			local text = ARC9:GetPhrase("hud.hint.reload")
+
+			if ARC9.CTRL_Lookup[glyph] then glyph = ARC9.CTRL_Lookup[glyph] end
+			if ARC9.CTRL_ConvertTo[glyph] then glyph = ARC9.CTRL_ConvertTo[glyph] end
+			if ARC9.CTRL_Exists[glyph] then glyph = Material( "arc9/glyphs_light/" .. glyph .. "_lg" .. ".png", "smooth" ) end
+
+			surface.SetTextColor(255, 255, 255, 255)
+			surface.SetDrawColor(255, 255, 255, 255)
+			surface.SetFont("ARC9_16")
+			local symbol = CreateControllerKeyLine({x = scrw / 2-ScreenScale(5), y = scrh / 2 + ScreenScale(56), size = ScreenScale(8), font = "ARC9_12", font_keyb = "ARC9_12" }, { glyph, ScreenScale(8) })
+
+			surface.SetFont("ARC9_10")
+			local tw = surface.GetTextSize(text)
+			surface.SetTextPos(scrw / 2 - tw / 2, scrh / 2 + ScreenScale(66))
+			surface.DrawText(text)
+		end
+    end
 
     if self:GetSightAmount() > 0.75 and getsight.FlatScope and getsight.FlatScopeOverlay then
         if getsight.FlatScopeBlackBox then
@@ -290,6 +329,43 @@ function SWEP:DrawHUD()
         end
     end
 
+	cv2 = cv2 or GetConVar("arc9_cruelty_reload")
+    if cv2:GetBool() and input.IsKeyDown(input.GetKeyCode(self:GetBinding("+reload"))) then
+        -- Draw vertical line
+
+        local col = Color(255, 255, 255, 255)
+
+        local reloadline_x = scrw * 3 / 4
+
+        surface.SetDrawColor(col)
+        surface.DrawLine(reloadline_x, 0, reloadline_x, scrh)
+
+        local reloadline_target_w = scrw / 20
+        local reloadline_target_y = scrh * 2 / 3
+
+        surface.DrawLine(reloadline_x - (reloadline_target_w / 2), reloadline_target_y, reloadline_x + (reloadline_target_w / 2), reloadline_target_y)
+
+        surface.SetFont("ARC9_16")
+        local text = "Reload"
+        local text_w, text_h = surface.GetTextSize(text)
+
+        surface.SetTextPos(reloadline_x + ARC9ScreenScale(2), reloadline_target_y - text_h)
+        surface.SetTextColor(col)
+        surface.DrawText(text)
+
+        surface.SetFont("ARC9_16")
+        local text2 = "Drag down to reload!!!"
+        local text2_w, text2_h = surface.GetTextSize(text2)
+
+        surface.SetTextPos(reloadline_x + ARC9ScreenScale(2), reloadline_target_y + ARC9ScreenScale(2))
+        surface.SetTextColor(Color(255, 255, 255, 255 * math.abs(math.sin(CurTime() * 5))))
+        surface.DrawText(text2)
+
+        local reloadline_mover_y = reloadline_target_y * ARC9.ReloadAmount
+
+        surface.DrawLine(reloadline_x - (reloadline_target_w / 2), reloadline_mover_y, reloadline_x + (reloadline_target_w / 2), reloadline_mover_y)
+    end
+
     -- Bipod hint
 
     local ft1000 = RealFrameTime() * 1000
@@ -303,9 +379,12 @@ function SWEP:DrawHUD()
         bipodhintstate = false
     end
 
-    if bipodhint > 0 then
+	cv3 = cv3 or GetConVar("arc9_center_bipod")
+    if cv3:GetBool() and bipodhint > 0 then
         local glyph = ARC9.GetBindKey(bipodhintstate and "+back" or "+attack2")
-        local text = bipodhintstate and "Exit bipod" or "Enter bipod"
+        -- local text = bipodhintstate and "Exit bipod" or "Enter bipod"
+		-- local text = bipodhintstate and ARC9:GetPhrase("hud.hint.bipod.exit") or ARC9:GetPhrase("hud.hint.bipod.enter")
+		local text = ARC9:GetPhrase("hud.hint.bipod")
 
         if ARC9.CTRL_Lookup[glyph] then glyph = ARC9.CTRL_Lookup[glyph] end
         if ARC9.CTRL_ConvertTo[glyph] then glyph = ARC9.CTRL_ConvertTo[glyph] end
@@ -321,8 +400,6 @@ function SWEP:DrawHUD()
         surface.SetTextPos(scrw / 2 - tw / 2, scrh / 2 + ScreenScale(106))
         surface.DrawText(text)
     end
-
-    --
 
     self:HoldBreathHUD()
     self:DrawCustomizeHUD()
@@ -373,14 +450,18 @@ function SWEP:DrawWeaponSelection(x, y, w, h, a)
     if !selecticon then return end
 
     self.WepSelectIcon = selecticon:GetTexture("$basetexture")
+    if self:GetJammed() then  
+        surface.SetDrawColor(200, 50, 50, a)
+    else
+        surface.SetDrawColor(255, 255, 255, a)
+    end
 
-    surface.SetDrawColor(255, 255, 255, a)
     surface.SetMaterial(selecticon)
     if w > h then
         y = y - ((w - h) / 2)
     end
-    -- surface.DrawTexturedRect(x, y, w, w)
-    surface.DrawTexturedRectUV(x, y, w, w, 1, 0, 0, 1)
+    surface.DrawTexturedRect(x, y, w, w)
+    // surface.DrawTexturedRectUV(x, y, w, w, 0, 0, 1, 1)
 end
 
 SWEP.AutoSelectIcon = nil

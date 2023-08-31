@@ -264,6 +264,18 @@ end
 local arc9_killfeed_color = GetConVar("arc9_killfeed_color")
 local matshiny = Material("models/shiny")
 
+local colormodifyicontabll = {
+	[ "$pp_colour_addr" ] = 0,
+	[ "$pp_colour_addg" ] = 0,
+	[ "$pp_colour_addb" ] = 0,
+	[ "$pp_colour_brightness" ] = 0,
+	[ "$pp_colour_contrast" ] = 1.4,
+	[ "$pp_colour_colour" ] = 1.3,
+	[ "$pp_colour_mulr" ] = 0,
+	[ "$pp_colour_mulg" ] = 0,
+	[ "$pp_colour_mulb" ] = 0
+}
+
 function SWEP:DoPresetCapture(filename, foricon)
     local color = arc9_killfeed_color:GetBool()
 
@@ -297,7 +309,7 @@ function SWEP:DoPresetCapture(filename, foricon)
     local custpos, custang = self:GetProcessedValue("CustomizePos"), self:GetProcessedValue("CustomizeAng")
     custpos = custpos + self.CustomizeSnapshotPos
     custang = custang + self.CustomizeSnapshotAng
-    local pos, ang = Vector(0, 0, 0), Angle(0, 0, 0)
+    local pos, ang = Vector(0, 0, 1), Angle(0, 0, 0)
 
     pos = pos + (camang:Right() * custpos[1])
     pos = pos + (camang:Forward() * custpos[2])
@@ -317,8 +329,12 @@ function SWEP:DoPresetCapture(filename, foricon)
     -- campos = campos + camang:Right() * -custpos.x
     -- campos = campos + camang:Forward() * -custpos.y
     -- campos = campos + camang:Up() * -custpos.z
-
-    cam.Start3D(campos, camang, self:GetProcessedValue("CustomizeSnapshotFOV"), 0, 0, ScrW(), ScrH(), 1, 1024)
+    local scrrw, scrrh = ScrW(), ScrH()
+    if scrrw/scrrh > 1.8 then -- ultrawide fix
+        cam.Start3D(campos, camang, self:GetProcessedValue("CustomizeSnapshotFOV"), (scrrw-scrrh*1.77777777)*0.5, 0, scrrh*1.77777777, scrrh, 1, 1024)
+    else
+        cam.Start3D(campos, camang, self:GetProcessedValue("CustomizeSnapshotFOV"), 0, 0, scrrw, scrrh, 1, 1024)
+    end
 
     render.ClearDepth()
 
@@ -339,29 +355,35 @@ function SWEP:DoPresetCapture(filename, foricon)
     -- mdl:SetupBones()
     -- mdl:InvalidateBoneCache()
 
-    if !color then
-        render.SetBlend(1)
-        render.SetColorModulation(1, 1, 1)
-        render.MaterialOverride(matshiny)
-    end
+    render.SetBlend(1)
+    render.SetColorModulation(1, 1, 1)
+    render.MaterialOverride(matshiny)
 
     render.OverrideColorWriteEnable(true, false)
     -- self:GetVM():DrawModel()
-    self:DrawCustomModel(true, pos, ang)
+    self:DrawCustomModel(true, pos + Vector(0.5, -0.5, -0.5), ang)
     render.OverrideColorWriteEnable(false, false)
 
-    render.BlurRenderTarget(cammat, 10, 10, 1)
+    render.BlurRenderTarget(cammat, 3, 3, 2)
 
-    if !color then
-        render.MaterialOverride(matshiny)
-    end
+    render.MaterialOverride(matshiny)
+    self:DrawCustomModel(true, pos, ang)
+
+    render.MaterialOverride()
+    render.SetWriteDepthToDestAlpha( true )
+    render.OverrideBlend( true, BLEND_ONE, BLEND_ZERO, BLENDFUNC_ADD, BLEND_ZERO, BLEND_ONE, BLENDFUNC_ADD )
 
     self:DrawCustomModel(true, pos, ang)
-    render.MaterialOverride()
 
-    render.SuppressEngineLighting(false)
+    render.MaterialOverride()
+    render.SetWriteDepthToDestAlpha( false )
+
+    DrawSharpen(0.2, 0.5)
+    DrawColorModify(colormodifyicontabll)
 
     self:KillModel(true)
+    render.OverrideBlend( false )
+    render.SuppressEngineLighting(false)
 
     cam.End3D()
 

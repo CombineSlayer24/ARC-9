@@ -101,6 +101,7 @@ ARC9.AutoStatsMains = {
     ["VisualRecoilPunch"] = {false, true},
     ["BreathHoldTime"] = {false, false},
     ["RecoilModifierCap"] = {false, true},
+    ["BashSpeed"] = {false, false},
 }
 
 ARC9.AutoStatsOperations = {
@@ -198,7 +199,8 @@ ARC9.AutoStatsConditions = {
     ["Recoil"] = "With Each Shot",
     ["Move"] = "While Moving",
     ["BlindFire"] = "While Blind Firing",
-    ["UBGL"] = "In UBGL"
+    ["UBGL"] = "In UBGL",
+    ["Bipod"] = "On Bipod",
 }
 
 function ARC9.GetProsAndCons(atttbl, weapon)
@@ -209,8 +211,7 @@ function ARC9.GetProsAndCons(atttbl, weapon)
 
     for stat, value in pairs(atttbl) do
         if !isnumber(value) and !isbool(value) then continue end
-        if isnumber(value) then value = math.Round(value, 2) end
-
+        if isnumber(value) and (stat != "Spread" and stat != "SpreadOverride") then value = math.Round(value, 2) end
         local autostat = ""
         local autostatnum = ""
         local canautostat = false

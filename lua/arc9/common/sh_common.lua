@@ -99,6 +99,7 @@ ARC9.RicochetSounds = {
 ARC9.PresetPath = "arc9_presets/"
 ARC9.PresetIconFormat = "arc9.png"
 
+ARC9.ATTsHaveBeenReloaded = false
 ARC9.OverDraw = false
 
 ARC9.LHIKHandBones = {
@@ -228,6 +229,31 @@ ARC9.RHIKBones = {
     "ValveBiped.Bip01_R_Finger02"
 }
 
+ARC9.CancelMultipliers = {
+    [1] = {
+        [HITGROUP_HEAD]     = 2,
+        [HITGROUP_CHEST]    = 1,
+        [HITGROUP_STOMACH]  = 1,
+        [HITGROUP_LEFTARM]  = 0.25,
+        [HITGROUP_RIGHTARM] = 0.25,
+        [HITGROUP_LEFTLEG]  = 0.25,
+        [HITGROUP_RIGHTLEG] = 0.25,
+        [HITGROUP_GEAR]     = 1,
+        [HITGROUP_GENERIC]  = 1,
+    },
+    ["terrortown"] = {
+        [HITGROUP_HEAD]     = 1, -- TTT headshot damage is per weapon, there is no global multiplier.
+        [HITGROUP_CHEST]    = 1,
+        [HITGROUP_STOMACH]  = 1,
+        [HITGROUP_LEFTARM]  = 0.55,
+        [HITGROUP_RIGHTARM] = 0.55,
+        [HITGROUP_LEFTLEG]  = 0.55,
+        [HITGROUP_RIGHTLEG] = 0.55,
+        [HITGROUP_GEAR]     = 1,
+        [HITGROUP_GENERIC]  = 1,
+    },
+}
+
 ARC9.HUToM = 0.0254
 ARC9.MOAToAcc = 10 / 360 / 60
 
@@ -272,6 +298,9 @@ ARC9.IN_SWITCHSIGHTS = IN_RUN
 -- IN flags is 32 bit!
 -- We still have 7 free values!!!
 -- Use them up!!!!!
+
+-- Used in dmginfo:SetDamageCustom to denote pending AP damage
+ARC9.DMG_CUST_AP = 4096
 
 ARC9.HL2Replacements = {
     ["weapon_pistol"] = {ARC9.WEAPON_PISTOL},

@@ -6,7 +6,8 @@ end
 
 function SWEP:DoPlayerAnimationEvent(event)
     -- if CLIENT and self:ShouldTPIK() then return end
-    if event then self:GetOwner():DoAnimationEvent(event) end
+    if event then self:GetOwner():AnimRestartGesture(1, event, true) end
+    if SERVER then self:CallOnClient("DoPlayerAnimationEvent", event) end
 end
 
 function SWEP:PlayTranslatedSound(soundtab)
@@ -185,4 +186,7 @@ if CLIENT then
         return self:ScaleFOVByWidthRatio(target, ((ScrW and ScrW() or 4) / (ScrH and ScrH() or 3)) / (4 / 3))
     end
 
+    function SWEP:CallNonTPIKAnim(source)
+        self:DoPlayerAnimationEvent(self:GetProcessedValue(!self:ShouldTPIK() and "NonTPIK" .. source or source, true))
+    end
 end

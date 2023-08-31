@@ -1,3 +1,5 @@
+local bodyDamageCancel = GetConVar("arc9_mod_bodydamagecancel")
+local cancelmults = ARC9.CancelMultipliers[engine.ActiveGamemode()] or ARC9.CancelMultipliers[1]
 
 local vmaxs, vmins = Vector(2, 2, 2), Vector(-2, -2, -2)
 
@@ -7,7 +9,7 @@ function SWEP:MeleeAttack(bypass, bash2)
         if !self:GetProcessedValue("BashWhileSprint", true) and self:SprintLock() then return end
     end
 
-    self:DoPlayerAnimationEvent(self:GetProcessedValue("AnimMelee", true))
+    self:CallOnClient("CallNonTPIKAnim", "AnimMelee")
 
     local soundtab1 = {
         name = "meleeswing",
@@ -30,7 +32,7 @@ function SWEP:MeleeAttack(bypass, bash2)
 
     local tr = util.TraceHull({
         start = owner:EyePos(),
-        endpos = owner:EyePos() + (owner:EyeAngles():Forward() * range),
+        endpos = owner:EyePos() + (owner:GetAimVector() * range),
         mask = MASK_SHOT,
         filter = {owner, self:GetShieldEntity(), self.ShieldProp},
         maxs = vmaxs,
@@ -51,20 +53,24 @@ function SWEP:MeleeAttack(bypass, bash2)
         prefix = "Backstab"
     end
 
+	local bashspeed = self:GetProcessedValue("BashSpeed")
+
     self:SetFreeAimAngle(angle_zero)
 
     self:SetLastMeleeTime(CurTime())
 
-    self:SetNextPrimaryFire(CurTime() + self:GetProcessedValue("Pre" .. prefix .. "Time") + self:GetProcessedValue("Post" .. prefix .. "Time"))
+    self:SetNextPrimaryFire(CurTime() + (self:GetProcessedValue("Pre" .. prefix .. "Time") / bashspeed) + (self:GetProcessedValue("Post" .. prefix .. "Time") / bashspeed))
+
+	self.SetNextAiming = CurTime() + (self:GetProcessedValue("Pre" .. prefix .. "Time") / bashspeed) + (self:GetProcessedValue("Post" .. prefix .. "Time") / bashspeed)
 
     self:SetBash2(bash2)
 
     if backstab and self:HasAnimation("backstab") then
-        self:PlayAnimation("backstab", 1, false)
+        self:PlayAnimation("backstab", 1 / bashspeed, false)
     elseif bash2 and self:HasAnimation("bash2") then
-        self:PlayAnimation("bash2", 1, false)
+        self:PlayAnimation("bash2", 1 / bashspeed, false)
     elseif self:HasAnimation("bash") then
-        self:PlayAnimation("bash", 1, false)
+        self:PlayAnimation("bash", 1 / bashspeed, false)
     else
         if game.SinglePlayer() and SERVER then
             self:CallOnClient("MeleeAttack", "true")
@@ -102,7 +108,7 @@ function SWEP:MeleeAttackShoot(bash2, backstab)
     local tr = util.TraceHull({
         start = owner:EyePos(),
         endpos = owner:EyePos() + (owner:EyeAngles():Forward() * self:GetProcessedValue(prefix .. "Range")),
-        mask = MASK_SHOT,
+        mask = MASK_SHOT + 8,
         filter = {owner, self:GetShieldEntity(), self.ShieldProp},
         maxs = vmaxs2,
         mins = vmins2
@@ -178,7 +184,8 @@ function SWEP:MeleeAttackShoot(bash2, backstab)
             local data = {tr = tr, dmg = dmg}
             self:RunHook("Hook_BashHit", data)
 
-            tr.Entity:TakeDamageInfo(dmg)
+            -- do not need to worry about limb damage because hull traces only returns generic hitgroup
+            tr.Entity:DispatchTraceAttack(dmg, tr) -- hits breakable glass surfaces, unlike TakeDamageInfo
         end
     end
 
@@ -205,7 +212,7 @@ function SWEP:ThinkMelee()
 
     end
 
-    local prebash = self:GetProcessedValue("PreBashTime")
+    local prebash = self:GetProcessedValue("PreBashTime") / self:GetProcessedValue("BashSpeed")
 
     if self:GetBash2() then
         prebash = self:GetProcessedValue("PreBash2Time")
