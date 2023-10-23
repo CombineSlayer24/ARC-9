@@ -224,7 +224,7 @@ function ARC9.InputMouseApply( cmd, x, y, ang )
         c_angles = c_angles
     end
 
-    local sensa = mult * sensitivity:GetFloat() / 100
+    local sensa = mult * sensitivity:GetFloat() / 500
 
     local deltax = x * sensa
     local deltay = y * sensa
