@@ -124,6 +124,7 @@ end
 
 function SWEP:CreateHUD_Bench()
     local bg = self.CustomizeHUD
+	local imperial = GetConVar("arc9_imperial"):GetBool()
 
     self:ClearTabPanel()
 
@@ -313,16 +314,19 @@ function SWEP:CreateHUD_Bench()
             surface.SetTextPos((w - tw) / 2, ARC9ScreenScale(1))
             surface.DrawText(txt_corner)
 
-            local txt_bottom = (ARC9:GetPhrase("customize.bench.effect") or "") .. " " .. tostring(math.Round(ARC9.HUToM * ranger_range, 0)) .. ARC9:GetPhrase("unit.meter")
+			local impm = imperial and "yard" or "meter"
+			local impv = imperial and 1.0936 or 1
+
+            local txt_bottom = (ARC9:GetPhrase("customize.bench.effect") or "") .. " " .. tostring(math.Round(ARC9.HUToM * impv * ranger_range, 0)) .. ARC9:GetPhrase("unit." .. impm)
             local tbw = surface.GetTextSize(txt_bottom)
             surface.SetTextPos((w - tbw) / 2, h - ARC9ScreenScale(8))
             surface.DrawText(txt_bottom)
         end
 
         local ranger = vgui.Create("DPanel", tp)
-        local width2 = math.min(ARC9ScreenScale(200), ScrW()/3)
+        local width2 = math.min(ARC9ScreenScale(200), ScrW() / 3)
         ranger:SetSize(width2, ARC9ScreenScale(100))
-        ranger:SetPos(ARC9ScreenScale(100)+width/22, 0)
+        ranger:SetPos(ARC9ScreenScale(100) + width / 22, 0)
         ranger.Paint = function(self2, w, h)
             if !IsValid(self) then return end
 
@@ -331,34 +335,62 @@ function SWEP:CreateHUD_Bench()
             draw.NoTexture()
             surface.DrawPoly({{x = cornercut, y = h},{x = 0, y = h-cornercut}, {x = 0, y = cornercut},{x = cornercut, y = 0}, {x = w-cornercut, y = 0},{x = w, y = cornercut}, {x = w, y = h-cornercut}, {x = w-cornercut, y = h}})
 
+            local sweetspot = self:GetProcessedValue("SweetSpot", true)
+
             local range_min = self:GetValue("RangeMin")
             local range_max = self:GetValue("RangeMax")
+			
+            -- local range_min = imperial and (self:GetValue("RangeMin")) or self:GetValue("RangeMin")
+            -- local range_max = imperial and (self:GetValue("RangeMax")) or self:GetValue("RangeMax")
+            local range_sweet = self:GetValue("SweetSpotRange")
 
             local dmg_max = self:GetDamageAtRange(range_min)
             local dmg_min = self:GetDamageAtRange(range_max)
+            local dmg_sweet = self:GetValue("SweetSpotDamage")
 
             surface.SetDrawColor(ARC9.GetHUDColor("fg", 75))
 
             ranger_range = range_min
 
             local dmg_diff = math.abs(dmg_max - dmg_min)
+            local actual_minimum_damage = math.min(dmg_min, dmg_max)
+            if sweetspot then
+                dmg_diff = math.max(dmg_diff, math.abs(dmg_max - dmg_sweet), math.abs(dmg_min - dmg_sweet))
+                actual_minimum_damage = math.min(actual_minimum_damage, dmg_sweet)
+            end
 
             local range_min_x = (w / 5)
             local range_max_x = 4 * (w / 5)
+            local range_sweetspot_x = 0
 
             local range_min_y = 3 * h / 4
             local range_max_y = 3 * h / 4
 
-            if dmg_max > dmg_min then
-                range_min_y = h / 4
-            elseif dmg_max < dmg_min then
-                range_max_y = h / 4
+            local dmg_scale = h / 100
+            if dmg_diff > 0 then
+                dmg_scale = h * 0.5 / dmg_diff
             end
 
-            local dmg_scale = h / 100
-
-            if dmg_diff > 0 then
-                dmg_scale = math.abs(range_max_y - range_min_y) / dmg_diff
+            if sweetspot and dmg_sweet > dmg_max and dmg_sweet > dmg_min then
+                -- sweet spot is top of scale
+                if dmg_max > dmg_min then
+                    -- max range (right) is bottom of scale
+                    range_min_y = h * 0.75 - dmg_scale * (dmg_max - dmg_min)
+                elseif dmg_max < dmg_min then
+                    -- min range (left) is bottom of scale
+                    range_max_y = h * 0.75 - dmg_scale * (dmg_min - dmg_max)
+                end
+            elseif sweetspot and dmg_sweet < dmg_max and dmg_sweet < dmg_min then
+                -- sweet spot is bottom of scale
+                range_min_y = h * 0.75 - dmg_scale * (dmg_max - dmg_sweet)
+                range_max_y = h * 0.75 - dmg_scale * (dmg_min - dmg_sweet)
+            else
+                -- sweet spot doesn't exist or is in the middle. scale is unaffected
+                if dmg_max > dmg_min then
+                    range_min_y = h / 4
+                elseif dmg_max < dmg_min then
+                    range_max_y = h / 4
+                end
             end
 
             if range_min == 0 then
@@ -367,16 +399,30 @@ function SWEP:CreateHUD_Bench()
 
             surface.DrawLine(range_min_x, 0, range_min_x, h)
             surface.DrawLine(range_max_x, 0, range_max_x, h)
+            if sweetspot then
+                range_sweetspot_x = Lerp((range_sweet - range_min) / (range_max - range_min), range_min_x, range_max_x)
+                surface.DrawLine(range_sweetspot_x, 0, range_sweetspot_x, h)
+            end
 
             surface.SetDrawColor(ARC9.GetHUDColor("fg"))
 
-            -- Draw min range line
-
+            -- Draw range line
             surface.DrawLine(0, range_min_y, range_min_x, range_min_y)
-
-            -- Draw max range line
-
             surface.DrawLine(range_max_x, range_max_y, w, range_max_y)
+            -- if sweetspot and dmg_max != dmg_min then
+            --     local f = h * Lerp((math.max(dmg_max, dmg_min) - math.min(dmg_max, dmg_min)) / math.max(dmg_max, dmg_min, dmg_sweet), 0.75, 0.25)
+            --     if dmg_max > dmg_min then
+            --         surface.DrawLine(0, f, range_min_x, f)
+            --         surface.DrawLine(range_max_x, range_max_y, w, range_max_y)
+            --     elseif dmg_max < dmg_min then
+            --         local f = h * Lerp((dmg_max - dmg_min) / math.max(dmg_min, dmg_sweet), 0.25, 0.75)
+            --         surface.DrawLine(0, range_min_y, range_min_x, range_min_y)
+            --         surface.DrawLine(range_max_x, f, w, f)
+            --     end
+            -- else
+            --     surface.DrawLine(0, range_min_y, range_min_x, range_min_y)
+            --     surface.DrawLine(range_max_x, range_max_y, w, range_max_y)
+            -- end
 
             local segments = 50
 
@@ -389,8 +435,6 @@ function SWEP:CreateHUD_Bench()
                 local dmg_at_i = self:GetDamageAtRange(range_at_i)
                 dmg_values[i] = dmg_at_i
             end
-
-            local actual_minimum_damage = math.min(dmg_min, dmg_max)
 
             for i = 1, segments do
                 local dmg_at_i = dmg_values[i - 1]
@@ -492,6 +536,30 @@ function SWEP:CreateHUD_Bench()
 
                 surface.SetTextPos(4 * (w / 5) + (ARC9ScreenScale(2)), ARC9ScreenScale(1 + 8))
                 surface.DrawText(txt_range2)
+
+                if sweetspot then
+                    local txt_dmg3 = tostring(math.Round(dmg_sweet)) .. " " .. ARC9:GetPhrase("unit.dmg")
+                    if self:GetValue("Num") > 1 then
+                        txt_dmg3 = math.Round(dmg_sweet * self:GetValue("Num")) .. "-" .. txt_dmg3
+                    end
+                    local txt_dmg3_w = surface.GetTextSize(txt_dmg3)
+                    local txt_range3 = self:RangeUnitize(range_sweet)
+                    local txt_range3_w = surface.GetTextSize(txt_range3)
+
+                    surface.SetFont("ARC9_8")
+                    surface.SetTextColor(ARC9.GetHUDColor("fg"))
+                    if range_sweetspot_x < w * 0.5 then
+                        surface.SetTextPos(range_sweetspot_x + (ARC9ScreenScale(2)), ARC9ScreenScale(1))
+                        surface.DrawText(txt_dmg3)
+                        surface.SetTextPos(range_sweetspot_x + (ARC9ScreenScale(2)), ARC9ScreenScale(1 + 8))
+                        surface.DrawText(txt_range3)
+                    else
+                        surface.SetTextPos(range_sweetspot_x - txt_dmg3_w - (ARC9ScreenScale(2)), ARC9ScreenScale(1))
+                        surface.DrawText(txt_dmg3)
+                        surface.SetTextPos(range_sweetspot_x - txt_range3_w - (ARC9ScreenScale(2)), ARC9ScreenScale(1 + 8))
+                        surface.DrawText(txt_range3)
+                    end
+                end
             end
 
             local txt_corner = ARC9:GetPhrase("customize.bench.ballistics") or ""

@@ -15,6 +15,11 @@ local conVars = {
         client = true
     },
     {
+        name = "lod_distance",
+        default = "1",
+        client = true
+    },
+    {
         name = "truenames",
         default = "2",
         client = true,
@@ -76,6 +81,11 @@ local conVars = {
         client = true
     },
     {
+        name = "cross_sgstyle",
+        default = "2",
+        client = true
+    },
+    {
         name = "reflex_r",
         default = "255",
         client = true
@@ -106,6 +116,16 @@ local conVars = {
         client = true
     },
     {
+        name = "holiday_month",
+        default = "0",
+        replicated = true
+    },
+    {
+        name = "holiday_day",
+        default = "0",
+        replicated = true
+    },
+    {
         name = "hud_color_r",
         default = "255",
         client = true
@@ -121,7 +141,13 @@ local conVars = {
         client = true
     },
     {
-        name = "hud_darkmode",
+        --     name = "hud_darkmode",
+        name = "hud_lightmode",
+        default = "0",
+        client = true
+    },
+    {
+        name = "hud_holiday",
         default = "0",
         client = true
     },
@@ -156,6 +182,11 @@ local conVars = {
         client = true,
     },
     {
+        name = "hud_scalefake", -- FAKE
+        default = "1",
+        client = true,
+    },
+    {
         name = "hud_deadzonex",
         default = "0",
         client = true,
@@ -175,11 +206,11 @@ local conVars = {
         default = "0",
         client = true
     },
-    {
-        name = "controller_rumble",
-        default = "1",
-        client = true
-    },
+    -- {
+        -- name = "controller_rumble",
+        -- default = "1",
+        -- client = true
+    -- },
     {
         name = "controller_glyphset",
         default = "",
@@ -188,6 +219,7 @@ local conVars = {
     {
         name = "modifiers",
         default = "",
+        replicated = true,
     },
     {
         name = "mod_bodydamagecancel",
@@ -223,8 +255,8 @@ local conVars = {
         default = "1",
     },
     {
-        name = "atts_generateentities",
-        default = "1",
+        name = "atts_generate_entities",
+        default = "0",
         replicated = true
     },
     {
@@ -234,6 +266,10 @@ local conVars = {
     {
         name = "npc_atts",
         default = "1",
+    },
+    {
+        name = "ground_atts",
+        default = "0",
     },
     {
         name = "npc_autoreplace",
@@ -271,6 +307,16 @@ local conVars = {
     },
     {
         name = "mod_sway",
+        default = "1",
+        replicated = true
+    },
+    {
+        name = "mod_overheat",
+        default = "1",
+        replicated = true
+    },
+    {
+        name = "mod_peek",
         default = "1",
         replicated = true
     },
@@ -346,6 +392,11 @@ local conVars = {
     {
         name = "bullet_gravity",
         default = "1",
+        replicated = true
+    },
+    {
+        name = "bullet_physics_shotguns",
+        default = "0",
         replicated = true
     },
     {
@@ -447,31 +498,29 @@ local conVars = {
         client = true
     },
     {
-        name = "killfeed_color",
-        default = "0",
+        name = "killfeed_colour",
+        default = "1",
         client = true
     },
     {
         name = "hud_always",
-        default = "0"
+        default = "0",
+        client = true,
     },
     {
         name = "hud_compact",
-        default = "0"
+        default = "0",
+        client = true,
     },
     {
         name = "hud_arc9",
-        default = "1"
+        default = "1",
+        client = true,
     },
     {
-        name = "hud_keephints",
+        name = "hud_force_disable",
         default = "0",
-        client = true
-    },
-    {
-        name = "hud_nohints",
-        default = "0",
-        client = true
+        replicated = true,
     },
     {
         name = "infinite_ammo",
@@ -513,6 +562,11 @@ local conVars = {
         name = "crosshair_static",
         default = "0",
         replicated = false,
+        client = true
+    },
+    {
+        name = "crosshair_target",
+        default = "0",
         client = true
     },
     {
@@ -595,21 +649,22 @@ local conVars = {
         client = true,
         userinfo = true
     },
-    {
-        name = "autolean",
-        default = "1",
-        client = true,
-    },
-    {
-        name = "lean",
-        default = "1",
-    },
-    {
-        name = "togglelean",
-        default = "0",
-        client = true,
-        userinfo = true
-    },
+    -- {
+    --     name = "autolean",
+    --     default = "1",
+    --     client = true,
+    -- },
+    -- {
+    --     name = "lean",
+    --     default = "1",
+    --     replicated = true
+    -- },
+    -- {
+    --     name = "togglelean",
+    --     default = "0",
+    --     client = true,
+    --     userinfo = true
+    -- },
     {
         name = "togglepeek",
         default = "0",
@@ -652,6 +707,11 @@ local conVars = {
     },
     {
         name = "mod_spread",
+        default = "1",
+        replicated = true
+    },
+    {
+        name = "mod_dispersionspread",
         default = "1",
         replicated = true
     },
@@ -759,7 +819,165 @@ local conVars = {
         default = "1",
         client = true
     },
+    {
+        name = "aimassist",
+        default = "0",
+        replicated = true,
+    },
+    {
+        name = "aimassist_head",
+        default = "0",
+        replicated = true,
+    },
+    {
+        name = "aimassist_cone",
+        default = "5",
+        replicated = true,
+    },
+    {
+        name = "aimassist_intensity",
+        default = "1",
+        replicated = true,
+    },
+    -- {
+        -- name = "aimassist_lockon",
+        -- default = "0",
+        -- replicated = true,
+    -- },
+    -- {
+        -- name = "aimassist_lockon_cl",
+        -- default = "1",
+        -- client = true,
+    -- },
+    {
+        name = "aimassist_cl",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "crosshair_peek",
+        default = "1",
+        client = true
+    },
+    {
+        name = "aimassist_multsens",
+        default = "0.75",
+        client = true,
+    },
+    {
+        name = "glyph_family_hud",
+        default = "light",
+        client = true,
+    },
+    {
+        name = "glyph_family_cust",
+        default = "light",
+        client = true,
+    },
+    -- {
+        -- name = "glyph_type",
+        -- default = "xbox",
+        -- client = true,
+    -- },
+    {
+        name = "fx_rtvm",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "dev_show_affectors",
+        default = "0",
+    },
+    {
+        name = "dtap_sights",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "center_jam",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "center_firemode",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "center_firemode_time",
+        default = "0.75",
+        client = true,
+    },
+    {
+        name = "center_overheat",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "center_overheat_dark",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "imperial",
+        default = "0",
+        client = true,
+    },
+    {
+        name = "vm_camstrength",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "vm_camrollstrength",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "hud_hints",
+        default = "1",
+        client = true,
+    },
+    {
+        name = "fx_inspectblur",
+        default = "0",
+        client = true
+    },
+    {
+        name = "ignore_dx",
+        default = "0",
+        client = true
+    },
+    {
+        name = "fancy_spawnmenu",
+        default = "1",
+        client = true
+    },
+    {
+        name = "gradual_sens",
+        default = "0",
+        client = true
+    },
+    {
+        name = "phystweak",
+        default = "1",
+    },
+    {
+        name = "atts_maxcamos",
+        default = "3",
+    },
+    {
+        name = "indoorsound",
+        default = "1",
+        replicated = true
+    },
+    {
+        name = "vm_adsstyle",
+        default = "0",
+        client = true
+    },
 }
+ARC9.ConVarData = {}
 
 local prefix = "arc9_"
 
@@ -783,6 +1001,8 @@ for _, var in pairs(conVars) do
         table.insert(torevertlist_sv, convar_name)
         CreateConVar(convar_name, var.default, flags, var.helptext, var.min, var.max)
     end
+
+    ARC9.ConVarData[convar_name] = var
 end
 
 if CLIENT then
@@ -799,9 +1019,29 @@ concommand.Add("arc9_settings_reset_server", function()
     end
 end, nil, "Reset all server ARC9 settings.")
 
+function ARC9.ShouldNetworkConVar(ply, cvar)
+    if !ARC9.ConVarData[cvar] then return end
+    if game.SinglePlayer() or ply:IsListenServerHost() then return false end
+
+    if ARC9.ConVarData[cvar].client then return false end
+
+    return true
+end
+
 if SERVER then
     util.AddNetworkString("ARC9_InvalidateAll")
     util.AddNetworkString("ARC9_InvalidateAll_ToClients")
+    util.AddNetworkString("arc9_setconvar")
+    util.AddNetworkString("arc9_svattcount")
+
+    net.Receive("arc9_setconvar", function(len, ply)
+        if !ply:IsAdmin() then return end
+        local cvar = net.ReadString()
+        if !ARC9.ShouldNetworkConVar(ply, cvar) then return end
+        local val = net.ReadString()
+        GetConVar(cvar):SetString(val)
+        print(ply:GetName() .. " set '" .. cvar .. "' to '" .. val .. "'.")
+    end)
 
     net.Receive("ARC9_InvalidateAll", function(len, ply)
         if ply:IsAdmin() then
@@ -819,241 +1059,60 @@ end
 function ARC9.InvalidateAll()
     for _, ent in ipairs(ents.GetAll()) do
         if IsValid(ent) and ent:IsWeapon() and ent.ARC9 then
-            ent:InvalidateCache()
+            ent:PostModify(true)
         end
     end
 end
 
 if CLIENT then
 
-local function menu_client_ti(panel)
-    panel:AddControl("checkbox", {
-        label = "Auto-Save Weapon",
-        command = "arc9_autosave"
-    })
-    panel:ControlHelp( "Reattach your last used attachments." )
-    panel:AddControl("checkbox", {
-        label = "Draw HUD",
-        command = "arc9_hud_arc9"
-    })
-    panel:AddControl("checkbox", {
-        label = "Draw HUD Everywhere",
-        command = "arc9_hud_always"
-    })
-    panel:ControlHelp( "HUD on all weapons." )
-    panel:AddControl("checkbox", {
-        label = "ADS Blur",
-        command = "arc9_fx_adsblur"
-    })
-    panel:AddControl("checkbox", {
-        label = "ADS Blur on RT Scopes",
-        command = "arc9_fx_rtblur"
-    })
-    panel:AddControl("checkbox", {
-        label = "Keep HUD Hints",
-        command = "arc9_hud_keephints"
-    })
-    panel:ControlHelp( "Never fade HUD hints." )
-    panel:AddControl("checkbox", {
-        label = "Enable TPIK",
-        command = "arc9_tpik"
-    })
-    panel:ControlHelp( "Use high quality first person animations in third person, where available." )
-    panel:AddControl("checkbox", {
-        label = "Enable TPIK For Others",
-        command = "arc9_tpik_others"
-    })
-    panel:ControlHelp( "Enable TPIK on other players." )
-    panel:AddControl("checkbox", {
-        label = "Viewmodel Bob Style",
-        command = "arc9_vm_bobstyle"
-    })
-    panel:ControlHelp( "Toggle between old and new viewmodel bobbing." )
-    panel:AddControl("checkbox", {
-        label = "Toggle ADS",
-        command = "arc9_toggleads"
-    })
-    panel:AddControl("checkbox", {
-        label = "Automatic Reload",
-        command = "arc9_autoreload"
-    })
-    panel:AddControl("checkbox", {
-        label = "Other Player Flashlights",
-        command = "arc9_allflash"
-    })
-    panel:ControlHelp( "Other players have proper, visible flashlights in third person. Extremely expensive." )
+    local debounce = {}
+    function ARC9.NetworkConVar(cvar, value)
+        if !ARC9.ShouldNetworkConVar(LocalPlayer(), cvar) then return end
+        if !LocalPlayer():IsAdmin() then return end
+        if (debounce[cvar] or 0) > CurTime() then return end
 
-    -- Add a slider for FOV
-    panel:AddControl("slider", {
-        label = "Viewmodel FOV",
-        command = "arc9_fov",
-        min = -45,
-        max = 45,
-    })
-
-    -- Add help text for imaginary bullets
-    panel:ControlHelp( "Imaginary bullets appear to travel outside the skybox. There is no gameplay difference to disabling this option." )
-    -- Add a toggle for imaginary bullets
-    panel:AddControl("checkbox", {
-        label = "Enable Imaginary Bullets",
-        command = "arc9_bullet_imaginary"
-    })
-    panel:AddControl("checkbox", {
-        label = "ADS Sensitivity Compensation",
-        command = "arc9_compensate_sens"
-    })
-end
+        net.Start("arc9_setconvar")
+            net.WriteString(cvar)
+            net.WriteString(value)
+        net.SendToServer()
+        debounce[cvar] = CurTime() + 0.1
+    end
 
 local function menu_arc9_settings(panel)
-    local butt = vgui.Create( "DButton", panel )
-
-    butt:SetText("Open settings panel!")
+    local butt = panel:Button("Open settings panel!", "arc9_settings_open")
+    butt:SetText("Open ARC9 Settings")
     butt:SetPos(20, 50)
     butt:SetSize(300, 50)
-    function butt:DoClick()
-        ARC9_OpenSettings()
-    end
-end
-
-local function menu_client_customization(panel)
-    panel:AddControl("checkbox", {
-        label = "Customization Blur",
-        command = "arc9_cust_blur"
-    })
-    panel:ControlHelp( "Blur the background of the customization screen.\nMay reduce performance." )
-    panel:AddControl("checkbox", {
-        label = "Customization Light",
-        command = "arc9_cust_light"
-    })
-    panel:ControlHelp( "Add a light to the customization screen." )
-    panel:AddControl("checkbox", {
-        label = "Customization Hints",
-        command = "arc9_cust_hints"
-    })
-    panel:ControlHelp( "Show hints in bottom of hud of actions you can do there   please write better string for this" )
-    panel:AddControl("checkbox", {
-        label = "Reset attachment selection on exit",
-        command = "arc9_cust_exit_reset_sel"
-    })
-    panel:ControlHelp( "Reset last selected attachment and its folder on exit from customisation menu  (maybe write about it making you go back to slots selection?) please write better string for this" )
-    panel:AddControl("checkbox", {
-        label = "Disable Holiday Theming",
-        command = "arc9_holiday_grinch"
-    })
-    panel:ControlHelp( "Disable all holiday and events related theming.\nYou're a mean one, Mr. Grinch." )
-    panel:AddControl("slider", {
-        label = "DEBUG: Holiday Month",
-        command = "arc9_holiday_month",
-        min = 0,
-        max = 12,
-    })
-    panel:ControlHelp( "Fake month to debug and test as, set over 0!!" )
-    panel:AddControl("slider", {
-        label = "DEBUG: Holiday Day",
-        command = "arc9_holiday_day",
-        min = 0,
-        max = 31,
-    })
-    panel:ControlHelp( "Fake day to debug and test as, set over 0!!" )
-end
-
-
-local function menu_client_crosshair(panel)
-    panel:AddControl("label", {
-        text = "Crosshairs are only enabled on certain weapons."
-    })
-    panel:AddControl("checkbox", {
-        label = "Enable Crosshair",
-        command = "arc9_cross_enable"
-    })
-    panel:AddControl("color", {
-        label = "Crosshair Color",
-        red = "arc9_cross_r",
-        green = "arc9_cross_g",
-        blue = "arc9_cross_b"
-    })
-end
-
-local function menu_client_optics(panel)
-    panel:AddControl("checkbox", {
-        label = "Cheap Scopes",
-        command = "arc9_cheapscopes"
-    })
-    panel:ControlHelp( "Cheap Scopes are practically as good as normal scopes, but substantially improve performance." )
-    panel:AddControl("color", {
-        label = "Reflex Sight Color",
-        red = "arc9_reflex_r",
-        green = "arc9_reflex_g",
-        blue = "arc9_reflex_b"
-    })
-    panel:AddControl("color", {
-        label = "Scope Color",
-        red = "arc9_scope_r",
-        green = "arc9_scope_g",
-        blue = "arc9_scope_b"
-    })
-end
-
-local function menu_server_ballistics(panel)
-    panel:AddControl("checkbox", {
-        label = "Physical Bullets",
-        command = "arc9_bullet_physics"
-    })
-    panel:ControlHelp( "Most weapons are designed for this to be on. Some weapons force physical bullets on. Disabling this will improve server performance." )
-
-    -- Add a slider to control bullet gravity
-    panel:AddControl("slider", {
-        label = "Gravity Multiplier",
-        command = "arc9_bullet_gravity",
-        min = 0,
-        max = 100,
-    })
-
-    -- Add a slider for bullet drag
-    panel:AddControl("slider", {
-        label = "Drag Multiplier",
-        command = "arc9_bullet_drag",
-        min = 0,
-        max = 100,
-    })
-
-    -- Add a toggle for ricochet
-    panel:AddControl("checkbox", {
-        label = "Enable Ricochet",
-        command = "arc9_ricochet"
-    })
-
-    -- Add a slider for bullet lifetime
-    panel:AddControl("slider", {
-        label = "Bullet Lifetime",
-        command = "arc9_bullet_lifetime",
-        min = 1,
-        max = 100,
-    })
+    -- panel:ControlHelp( "\nAccess the ARC9 settings by pressing this button without having to equip a weapon!" )
 end
 
 local function menu_client_controller(panel)
-    panel:AddControl( "header", { description = "Replace key names with controller glyphs." } )
-    panel:CheckBox("Engage Super Controller Mode", "arc9_controller")
-    panel:ControlHelp( "Activate controller-focused features in ARC9.\n- Keys are replaced with their bindnames.\n- Jump and reload are used as Select and Deselect, respectively." )
+    -- panel:AddControl( "header", { description = "Replace key names with controller glyphs." } )
+    -- panel:CheckBox("Activate Controller Mode", "arc9_controller")
+    -- panel:ControlHelp( "Activate controller-focused features in ARC9.\n- Keys are replaced with their bindnames.\n- JUMP and USE are used as Select and Deselect, respectively." )
+    -- panel:ControlHelp( "Activate a controller-friendly mode for ARC9.\n- JUMP, RELOAD and USE can be used to Select, Deselect and\nRandomly Select attachments.\n\nController glyphs can be customized down below!" )
     -- panel:CheckBox("Controller Rumble w/ SInput", "arc9_controller_rumble")
     -- panel:ControlHelp( "Use Fesiug's SInput to interact with ARC9.\nFound at github.com/Fesiug/gmod-sinput" )
+    
+    local presetss = panel:ToolPresets( "arc9controller", { arc9_controller_glyphset = "" } )
+
     local listview = vgui.Create("DListView", panel)
     listview:SetSize( 99, 200 )
     panel:AddItem( listview )
     listview:SetMultiSelect( true )
-    listview:AddColumn( "Input" )
-    listview:AddColumn( "Output" )
+    listview:AddColumn( ARC9:GetPhrase("spawnmenu.controller.input") )
+    listview:AddColumn( ARC9:GetPhrase("spawnmenu.controller.output") )
 
     local tex_inp = vgui.Create( "DTextEntry", panel )
     local tex_out = vgui.Create( "DTextEntry", panel )
-    panel:ControlHelp( "Double-click to copy into text fields" )
+    -- panel:ControlHelp( "Glyph to show." )
+    -- panel:ControlHelp( "Double-click to copy into text fields" )
     panel:AddItem( tex_inp )
-    panel:ControlHelp( "Glyph or keyboard icon to be replaced.\nInputs are case-sensitive!" )
+    -- panel:ControlHelp( "Glyph or keyboard icon to be replaced.\nInputs are case-sensitive!" )
     panel:AddItem( tex_out )
-    panel:ControlHelp( "Glyph to show." )
-    tex_inp:SetPlaceholderText("Input to replace")
-    tex_out:SetPlaceholderText("Output to show")
+    tex_inp:SetPlaceholderText( ARC9:GetPhrase("spawnmenu.controller.glyphreplace") )
+    tex_out:SetPlaceholderText( ARC9:GetPhrase("spawnmenu.controller.glyphappear") )
 
     local but_add = vgui.Create( "DButton", panel )
     local but_rem = vgui.Create( "DButton", panel )
@@ -1065,22 +1124,22 @@ local function menu_client_controller(panel)
     panel:AddItem( but_rem )
     panel:AddItem( but_upd )
     panel:AddItem( but_app )
-    but_add:SetText("Add & apply")
-    but_rem:SetText("Remove selected")
-    but_upd:SetText("Restore from memory")
+    but_add:SetText( ARC9:GetPhrase("spawnmenu.controller.addapply") )
+    but_rem:SetText( ARC9:GetPhrase("spawnmenu.controller.remove") )
+    but_upd:SetText("Restore From Memory")
     but_app:SetText("Apply")
 
-	function listview:DoDoubleClick( lineID, line )
-		tex_inp:SetValue( line:GetColumnText( 1 ) )
-		tex_out:SetValue( line:GetColumnText( 2 ) )
-	end
+    function listview:DoDoubleClick( lineID, line )
+        tex_inp:SetValue( line:GetColumnText( 1 ) )
+        tex_out:SetValue( line:GetColumnText( 2 ) )
+    end
 
-	function listview:OnRowRightClick( lineID, line )
-		local menu = DermaMenu()
-		menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
-		menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
-		menu:Open()
-	end
+    function listview:OnRowRightClick( lineID, line )
+        local menu = DermaMenu()
+        menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
+        menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
+        menu:Open()
+    end
 
     function but_add:DoClick()
         local inp, out = string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue())
@@ -1133,17 +1192,31 @@ local function menu_client_controller(panel)
 
     local matselect_filter = vgui.Create( "DComboBox", panel )
     panel:AddItem( matselect_filter )
-    matselect_filter:AddChoice( "! No filter", "" )
-    matselect_filter:AddChoice( "Common (includes mice)", "shared_" )
-    matselect_filter:AddChoice( "PS4", "ps4_" )
-    matselect_filter:AddChoice( "PS5", "ps5_" )
-    matselect_filter:AddChoice( "PS Common", "ps_" )
-    matselect_filter:AddChoice( "Switch Pro", "switchpro_" )
+    matselect_filter:AddChoice( ARC9:GetPhrase("spawnmenu.controller.displayall"), "" )
+    matselect_filter:AddChoice( "\"Shared\"", "shared_" )
+    matselect_filter:AddChoice( "PlayStation", "ps" )
+    matselect_filter:AddChoice( "Xbox", "xbox" )
     matselect_filter:AddChoice( "Steam Controller", "sc_" )
     matselect_filter:AddChoice( "Steam Deck", "sd_" )
-    matselect_filter:AddChoice( "Xbox", "xbox_" )
-    matselect_filter:AddChoice( "Xbox 360", "xbox360_" )
-    matselect_filter:SetValue( "Filter by controller type" )
+    matselect_filter:AddChoice( "Nintendo Switch", "switchpro_" )
+	
+    -- matselect_filter:AddChoice( "Refresh", "" )
+    -- matselect_filter:AddChoice( "! Mouse !", "mouse" )
+    -- matselect_filter:AddChoice( "Amazon Luna", "AmazonLuna/" )
+    -- matselect_filter:AddChoice( "Ouya", "Ouya/" )
+    -- matselect_filter:AddChoice( "PlayStation 3", "PS3/" )
+    -- matselect_filter:AddChoice( "PlayStation 4", "PS4/" )
+    -- matselect_filter:AddChoice( "PlayStation 5", "PS5/" )
+    -- matselect_filter:AddChoice( "PlayStation Vita", "PSVita/" )
+    -- matselect_filter:AddChoice( "Google Stadia", "GoogleStadia/" )
+    -- matselect_filter:AddChoice( "Steam Controller", "Steam/" )
+    -- matselect_filter:AddChoice( "Steam Deck", "SteamDeck/" )
+    -- matselect_filter:AddChoice( "Nintendo Switch", "Switch/" )
+    -- matselect_filter:AddChoice( "Nintendo Wii U", "WiiU/" )
+    -- matselect_filter:AddChoice( "Xbox 360", "Xbox360/" )
+    -- matselect_filter:AddChoice( "Xbox One", "XboxOne/" )
+    -- matselect_filter:AddChoice( "Xbox Series X|S", "XboxSeries/" )
+    matselect_filter:SetValue( ARC9:GetPhrase("spawnmenu.controller.filter") )
 
     local matselect = ""
     local function GenerateMatSelect()
@@ -1174,13 +1247,13 @@ local function menu_client_controller(panel)
         for k, v in SortedPairs( ARC9.CTRL_Exists ) do
             local sel, seldata = matselect_filter:GetSelected()
             if string.find( k, seldata or "" ) then
-                matselect:AddMaterial( k, "arc9/glyphs_dark/" .. k .. "_lg.png" )
+                matselect:AddMaterial( k, "arc9/" .. ARC9.GlyphFamilyHUD() .. k .. ".png" )
             end
         end
 
         matselect:SetAutoHeight( true )
-        matselect:SetItemWidth( 0.1875 )
-        matselect:SetItemHeight( 0.1875 )
+        matselect:SetItemWidth( 0.1875 * 0.66 )
+        matselect:SetItemHeight( 0.1875 * 0.66 )
 
         matselect.InputPanel = tex_inp
         matselect.OutputPanel = tex_out
@@ -1193,63 +1266,16 @@ local function menu_client_controller(panel)
         GenerateMatSelect()
     end
 
-end
-
-local function menu_server_ti(panel)
-    panel:AddControl("checkbox", {
-        label = "Enable Penetration",
-        command = "arc9_penetration"
-    })
-    panel:AddControl("checkbox", {
-        label = "NPCs Deal Equal Damage",
-        command = "arc9_npc_equality"
-    })
-    panel:AddControl("checkbox", {
-        label = "Default Body Damage Cancel",
-        command = "arc9_mod_bodydamagecancel"
-    })
-    panel:ControlHelp( "Disable body damage cancel only if you have another addon that will override the HL2 limb damage multipliers." )
-    panel:AddControl("checkbox", {
-        label = "Infinite Ammo",
-        command = "arc9_infinite_ammo"
-    })
-    -- Add a slider for giving NPCs weapons.
-    panel:AddControl("checkbox", {
-        label = "Allow Giving NPCs Weapons With +USE.",
-        command = "arc9_npc_give_weapons",
-    })
-end
-
-local function menu_server_attachments(panel)
-    panel:AddControl("checkbox", {
-        label = "Free Attachments",
-        command = "arc9_free_atts"
-    })
-    panel:ControlHelp( "Enable this to be able to use all attachments without spawning entities." )
-    panel:AddControl("checkbox", {
-        label = "Attachment Locking",
-        command = "arc9_atts_lock"
-    })
-    panel:ControlHelp( "You only need one attachment to be able to use it on all guns." )
-    panel:AddControl("checkbox", {
-        label = "Lose Attachments On Death",
-        command = "arc9_atts_loseondie"
-    })
-    panel:AddControl("checkbox", {
-        label = "Generate Attachment Entities",
-        command = "arc9_atts_generateentities"
-    })
-    panel:ControlHelp( "Disabling this can save a lot of time on startup." )
-    panel:AddControl("checkbox", {
-        label = "NPCs Get Random Attachments",
-        command = "arc9_atts_npc"
-    })
-    --Removed Anarchy Mode from menu to prevent inexperienced users from activating it
-    -- panel:AddControl("checkbox", {
-    --     label = "Total Anarchy Mode",
-    --     command = "arc9_atts_anarchy"
-    -- })
-    -- panel:ControlHelp( "For the love of God, don't enable this." )
+    presetss.OnSelect = function( self, index, value, data )
+        if !data then return end
+        for k, v in pairs( data ) do
+            RunConsoleCommand( k, v )
+        end
+        
+        timer.Simple(0.1, function()
+            but_upd:DoClick()
+        end)
+	end
 end
 
 c1 = {
@@ -1264,7 +1290,7 @@ c1 = {
     ["RicochetAngleMax"] = true,
     ["RicochetChance"] = true,
     ["ArmorPiercing"] = true,
-    ["EntityMuzzleVelocity"] = true,
+    ["MuzzleVelocity"] = true,
     ["PhysBulletMuzzleVelocity"] = true,
     ["PhysBulletDrag"] = true,
     ["PhysBulletGravity"] = true,
@@ -1289,7 +1315,7 @@ c1 = {
     ["RecoilAutoControl"] = true,
     ["RecoilKick"] = true,
     ["Spread"] = true,
-    ["PelletSpread"] = true,
+    ["DispersionSpread"] = true,
     ["FreeAimRadius"] = true,
     ["Sway"] = true,
     ["AimDownSightsTime"] = true,
@@ -1330,7 +1356,7 @@ c1 = {
     ["BulletGuidanceAmount"] = true,
     ["ExplosionDamage"] = true,
     ["ExplosionRadius"] = true,
-    ["CanLean"] = true,
+    -- ["CanLean"] = true,
     ["HoldBreathTime"] = true,
     ["RestoreBreathTime"] = true,
     ["SlamFire"] = true,
@@ -1379,36 +1405,42 @@ c3 = {
 }
 
 local function menu_server_modifiers(panel)
-    panel:AddControl( "header", { description = "Add ANY modifier with ANY special conditions." } )
+    local presetss = panel:ToolPresets( "arc9modifiers", { arc9_modifiers = "" } )
+
+    panel:AddControl( "header", { description = ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.info") or "Add ANY modifier with ANY special conditions." } )
     local listview = vgui.Create("DListView", panel)
     listview:SetSize( 99, 200 )
     panel:AddItem( listview )
     listview:SetMultiSelect( true )
-    listview:AddColumn( "Stat" )
-    listview:AddColumn( "Modifier" )
+    listview:AddColumn( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.stat") or "Stat" )
+    listview:AddColumn( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.modifier") or "Modifier" )
 
     local tex_inp = vgui.Create( "DTextEntry", panel )
     local tex_out = vgui.Create( "DTextEntry", panel )
-    panel:ControlHelp( "Double-click to copy into text fields" )
-    panel:AddItem( tex_inp )
-    panel:AddItem( tex_out )
-    tex_inp:SetPlaceholderText("Use the first list to select a stat to modify")
-    tex_out:SetPlaceholderText("Enter a number value, 'true', or 'false'.")
+    -- panel:ControlHelp( "Double-click to copy into text fields" )
 
     local com_1 = vgui.Create( "DComboBox", panel )
     local com_2 = vgui.Create( "DComboBox", panel )
     local com_3 = vgui.Create( "DComboBox", panel )
+    -- tex_inp:SetPlaceholderText("Alternatively, type which stat manually you'd like to modify here.")
     panel:AddItem( com_1 )
-    panel:ControlHelp( "Stat to change." )
+    panel:ControlHelp( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.selectstat") or "Select a stat to modify" )
     panel:AddItem( com_2 )
-    panel:ControlHelp( "Modification type. Some stats don't have these." )
+    panel:ControlHelp( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.selectmod") or "Add a modification type; Not all stats have these" )
     panel:AddItem( com_3 )
-    panel:ControlHelp( "Special condition, like if you're crouching." )
+    panel:ControlHelp( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.selectspec") or "Add a special condition, such as when crouching" )
+	
+    panel:ControlHelp( "" )
+    panel:AddItem( tex_inp )
+    tex_inp:SetPlaceholderText( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.result") or "Result appears here" )
 
-	function listview:DoDoubleClick( lineID, line )
-		tex_inp:SetValue( line:GetColumnText( 1 ) )
-		tex_out:SetValue( line:GetColumnText( 2 ) )
-	end
+    panel:AddItem( tex_out )
+    tex_out:SetPlaceholderText( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.selectval") or "Write a numerical value, or \"true\" / \"false\"" )
+	
+    function listview:DoDoubleClick( lineID, line )
+        tex_inp:SetValue( line:GetColumnText( 1 ) )
+        tex_out:SetValue( line:GetColumnText( 2 ) )
+    end
 
     for i, v in pairs(c1) do
         com_1:AddChoice( i )
@@ -1442,23 +1474,29 @@ local function menu_server_modifiers(panel)
     panel:AddItem( but_rem )
     panel:AddItem( but_upd )
     panel:AddItem( but_app )
-    but_add:SetText("Add & apply")
-    but_rem:SetText("Remove selected")
-    but_upd:SetText("Restore from memory")
+    but_add:SetText( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.controller.addapply") or "Add & Apply" )
+    but_rem:SetText( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.controller.remove") or "Remove Selected" )
+    but_upd:SetText("Restore From Memory")
     but_app:SetText("Apply")
 
-    panel:ControlHelp( "Examples:" )
-    panel:ControlHelp( " - \"Overheat\" \"true\" to disable overheating." )
-    panel:ControlHelp( " - \"BottomlessClip\" \"true\" to enable Bottomless Clip." )
-    panel:ControlHelp( " - \"RecoilMultCrouch\" \"0.1\" to reduce recoil to 10% when crouching." )
-    panel:ControlHelp( " - \"RPMMultOddShot\" \"0.5\" to make every other shot 600RPM." )
+    panel:ControlHelp( "" )
 
-	function listview:OnRowRightClick( lineID, line )
-		local menu = DermaMenu()
-		menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
-		menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
-		menu:Open()
-	end
+    if ARC9.GetPhrase then 
+        panel:ControlHelp( ARC9.GetPhrase and ARC9:GetPhrase("spawnmenu.supermod.examples") )
+    else
+        panel:ControlHelp( "Examples:" )
+        panel:ControlHelp( "∟ Overheat | true - Disables overheating" )
+        panel:ControlHelp( "∟ BottomlessClip | true - Enables Bottomless Clip" )
+        panel:ControlHelp( "∟ RecoilMultCrouch | 0.1 - Lowers recoil to 10% when crouching" )
+        panel:ControlHelp( "∟ RPMMultOddShot | 0.5 - Every other shot shoots at half RPM" )
+    end
+
+    function listview:OnRowRightClick( lineID, line )
+        local menu = DermaMenu()
+        menu:AddOption( "Copy", function() tex_inp:SetValue( line:GetColumnText( 1 ) ) tex_out:SetValue( line:GetColumnText( 2 ) ) end ):SetIcon( "icon16/page_copy.png" )
+        menu:AddOption( "Remove", function() listview:RemoveLine( lineID ) but_app:DoClick() end ):SetIcon( "icon16/cross.png" )
+        menu:Open()
+    end
 
     function but_add:DoClick()
         local inp, out = string.Trim(tex_inp:GetValue()), string.Trim(tex_out:GetValue())
@@ -1509,6 +1547,18 @@ local function menu_server_modifiers(panel)
         RunConsoleCommand("arc9_modifiers", toapply)
         RunConsoleCommand("arc9_modifiers_invalidateall")
     end
+
+    presetss.OnSelect = function( self, index, value, data )
+        if !data then return end
+        for k, v in pairs( data ) do
+            RunConsoleCommand( k, v )
+        end
+        
+        timer.Simple(0.1, function()
+            but_upd:DoClick()
+            RunConsoleCommand("arc9_modifiers_invalidateall")
+        end)
+	end
 end
 
 concommand.Add( "arc9_modifiers_invalidateall", function( ply, cmd, args )
@@ -1519,7 +1569,7 @@ end )
 
 local clientmenus_ti = {
     {
-        text = "REAL Settings", func = menu_arc9_settings
+        text = "ARC9 Settings", func = menu_arc9_settings
     },
     -- {
     --     text = "Client", func = menu_client_ti
@@ -1527,9 +1577,9 @@ local clientmenus_ti = {
     -- {
     --     text = "Client - Customization", func = menu_client_customization
     -- },
-    {
-        text = "Super Controller", func = menu_client_controller
-    },
+    -- {
+        -- text = "Controller Mode", func = menu_client_controller
+    -- },
     -- {
     --     text = "Client - Crosshair", func = menu_client_crosshair
     -- },
@@ -1555,5 +1605,42 @@ hook.Add("PopulateToolMenu", "ARC9_MenuOptions", function()
         spawnmenu.AddToolMenuOption("Options", "ARC9", "ARC9_" .. tostring(smenu), data.text, "", "", data.func)
     end
 end)
+
+local function opensupermodifers()
+    local frame = vgui.Create( "DFrame" )
+    frame:SetPos( 10, 30 )
+    frame:SetSize( 0.16 * ScrW(), 0.7 * ScrH() )
+    frame:SetTitle( ARC9:GetPhrase("spawnmenu.settings") )
+    frame:MakePopup()
+    frame:Center()
+
+    local scroller = vgui.Create( "DScrollPanel", frame )
+    scroller:Dock( FILL )
+    
+    local cpanle = vgui.Create( "ControlPanel", frame )
+    cpanle:SetName( ARC9:GetPhrase("settings.server.gameplay.supermod.title") )
+    cpanle:Dock( FILL )
+    menu_server_modifiers(cpanle)
+end
+
+local function opencontroller()
+    local frame = vgui.Create( "DFrame" )
+    frame:SetPos( 10, 30 )
+    frame:SetSize( 0.2 * ScrW(), ScrH() * 0.9 )
+    frame:SetTitle( ARC9:GetPhrase("spawnmenu.settings") )
+    frame:MakePopup()
+    frame:Center()
+    
+    local scroller = vgui.Create( "DScrollPanel", frame )
+    scroller:Dock( FILL )
+
+    local cpanle = vgui.Create( "ControlPanel", scroller )
+    cpanle:SetName( ARC9:GetPhrase("settings.gameplay.controllerglyphs.title") )
+    cpanle:Dock( FILL )
+    menu_client_controller(cpanle)
+end
+    
+concommand.Add("arc9_settings_supermodifiers", opensupermodifers)
+concommand.Add("arc9_settings_controller", opencontroller)
 
 end

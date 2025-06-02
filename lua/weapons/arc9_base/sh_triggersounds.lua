@@ -1,4 +1,6 @@
 function SWEP:ThinkTriggerSounds()
+    if (!self.TriggerDownSound or self.TriggerDownSound == "") and (!self.TriggerUpSound or self.TriggerUpSound == "") then return end -- no fucking trigger sounds
+
     if self:GetAnimLockTime() > CurTime() then return end
     if self:StillWaiting() then return end
     if self:SprintLock() then return end
@@ -10,10 +12,15 @@ function SWEP:ThinkTriggerSounds()
     if processedValue(self,"PrimaryBash", true) then return end
 
     if owner:KeyReleased(IN_ATTACK) then
+
+		if self.RecentMelee then 
+			return 
+		end
+
         local soundtab = {
             name = "triggerup",
-            sound = self:RandomChoice(self:GetProcessedValue("TriggerUpSound", true)),
-            channel = ARC9.CHAN_TRIGGER
+            sound = self:RandomChoice(self.TriggerUpSound),
+            channel = ARC9.CHAN_TRIGGER+7
         }
 
         self:PlayTranslatedSound(soundtab)
@@ -22,8 +29,8 @@ function SWEP:ThinkTriggerSounds()
 
         local soundtab = {
             name = "triggerdown",
-            sound = self:RandomChoice(self:GetProcessedValue("TriggerDownSound", true)),
-            channel = ARC9.CHAN_TRIGGER
+            sound = self:RandomChoice(self.TriggerDownSound),
+            channel = ARC9.CHAN_TRIGGER+7
         }
 
         self:PlayTranslatedSound(soundtab)

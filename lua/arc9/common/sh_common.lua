@@ -29,73 +29,102 @@ ARC9.CosmeticCategories = {
     ["camo"] = true,
     ["stickers"] = true,
 }
+
 ARC9.ShellSoundsTable = {
-    "arc9/casings/casingfall_metal_large.wav",
-    "arc9/casings/casingfall_metal_small.wav"
+    ")arc9/casings/casingfall_metal_large.wav",
+    ")arc9/casings/casingfall_metal_small.wav"
 }
 
 ARC9.PistolShellSoundsTable = {
-    "arc9/casings/casingfall_metal_large.wav",
-    "arc9/casings/casingfall_metal_small.wav"
+    ")arc9/casings/casingfall_metal_large.wav",
+    ")arc9/casings/casingfall_metal_small.wav"
 }
-
-
-ARC9.TinyShellSoundsTable = {
-    "arc9/casings/casingfall_metal_large.wav",
-    "arc9/casings/casingfall_metal_small.wav"
-}
-
-
---[[ ARC9.ShellSoundsTable = {
-    "arc9/casings/casing_556_1.wav",
-    "arc9/casings/casing_556_2.wav",
-    "arc9/casings/casing_556_3.wav",
-    "arc9/casings/casing_556_4.wav",
-    "arc9/casings/casing_308_1.wav",
-    "arc9/casings/casing_308_2.wav",
-    "arc9/casings/casing_308_3.wav",
-    "arc9/casings/casing_308_4.wav"
-}
-
-ARC9.PistolShellSoundsTable = {
-    "arc9/casings/casing_9mm_1.wav",
-    "arc9/casings/casing_9mm_2.wav",
-    "arc9/casings/casing_9mm_3.wav",
-    "arc9/casings/casing_9mm_4.wav"
-}
-
-ARC9.TinyShellSoundsTable = {
-    "arc9/casings/casing_22_1.wav",
-    "arc9/casings/casing_22_2.wav",
-    "arc9/casings/casing_22_3.wav",
-    "arc9/casings/casing_22_4.wav"
-} ]]
 
 ARC9.ShotgunShellSoundsTable = {
-    "arc9/casings/casing_12ga_1.wav",
-    "arc9/casings/casing_12ga_2.wav",
-    "arc9/casings/casing_12ga_3.wav",
-    "arc9/casings/casing_12ga_4.wav"
+    ")arc9/casings/casingfall_metal_large.wav",
+    ")arc9/casings/casingfall_metal_small.wav"
+}
+ARC9.Shell308SoundsTable = {
+    ")arc9/casings/casingfall_metal_large.wav",
+    ")arc9/casings/casingfall_metal_small.wav"
+}
+ARC9.TinyShellSoundsTable = {
+    ")arc9/casings/casingfall_metal_large.wav",
+    ")arc9/casings/casingfall_metal_small.wav"
 }
 
-ARC9.RicochetSounds = {
-    "arc9/fx/ricochet_01.ogg",
-	"arc9/fx/ricochet_02.ogg",
-	"arc9/fx/ricochet_03.ogg",
-	"arc9/fx/ricochet_04.ogg",
-	"arc9/fx/ricochet_05.ogg",
-	"arc9/fx/ricochet_06.ogg",
-	"arc9/fx/ricochet_07.ogg",
-	"arc9/fx/ricochet_08.ogg",
-	"arc9/fx/ricochet_09.ogg",
-	"arc9/fx/ricochet_10.ogg",
-	"arc9/fx/ricochet_11.ogg",
-	"arc9/fx/ricochet_12.ogg",
-	"arc9/fx/ricochet_13.ogg",
-	"arc9/fx/ricochet_14.ogg",
-	"arc9/fx/ricochet_15.ogg"
- }
+--[[ ARC9.ShellSoundsTable = {
+    ")arc9/casings/casing_556_1.wav",
+    ")arc9/casings/casing_556_2.wav",
+    ")arc9/casings/casing_556_3.wav",
+    ")arc9/casings/casing_556_4.wav",
+    ")arc9/casings/casing_556_1.wav",
+    ")arc9/casings/casing_556_2.wav",
+    ")arc9/casings/casing_556_3.wav",
+    ")arc9/casings/casing_556_4.wav",
+}
 
+ARC9.Shell308SoundsTable = {
+    ")arc9/casings/casing_308_1.wav",
+    ")arc9/casings/casing_308_2.wav",
+    ")arc9/casings/casing_308_3.wav",
+    ")arc9/casings/casing_308_4.wav",
+    ")arc9/casings/casing_308_1.wav",
+    ")arc9/casings/casing_308_2.wav",
+    ")arc9/casings/casing_308_3.wav",
+    ")arc9/casings/casing_308_4.wav",
+}
+
+ARC9.PistolShellSoundsTable = {
+    ")arc9/casings/casing_9mm_1.wav",
+    ")arc9/casings/casing_9mm_2.wav",
+    ")arc9/casings/casing_9mm_3.wav",
+    ")arc9/casings/casing_9mm_4.wav",
+    ")arc9/casings/casing_9mm_1.wav",
+    ")arc9/casings/casing_9mm_2.wav",
+    ")arc9/casings/casing_9mm_3.wav",
+    ")arc9/casings/casing_9mm_4.wav"
+}
+
+ARC9.TinyShellSoundsTable = {
+    ")arc9/casings/casing_22_1.wav",
+    ")arc9/casings/casing_22_2.wav",
+    ")arc9/casings/casing_22_3.wav",
+    ")arc9/casings/casing_22_4.wav",
+    ")arc9/casings/casing_22_1.wav",
+    ")arc9/casings/casing_22_2.wav",
+    ")arc9/casings/casing_22_3.wav",
+    ")arc9/casings/casing_22_4.wav"
+}
+
+ARC9.ShotgunShellSoundsTable = {
+    ")arc9/casings/casing_12ga_1.wav",
+    ")arc9/casings/casing_12ga_2.wav",
+    ")arc9/casings/casing_12ga_3.wav",
+    ")arc9/casings/casing_12ga_4.wav",
+    ")arc9/casings/casing_12ga_1.wav",
+    ")arc9/casings/casing_12ga_2.wav",
+    ")arc9/casings/casing_12ga_3.wav",
+    ")arc9/casings/casing_12ga_4.wav"
+}  ]]
+
+ARC9.RicochetSounds = {
+    ")arc9/fx/ricochet_01.wav",
+	")arc9/fx/ricochet_02.wav",
+	")arc9/fx/ricochet_03.wav",
+	")arc9/fx/ricochet_04.wav",
+	")arc9/fx/ricochet_05.wav",
+	")arc9/fx/ricochet_06.wav",
+	")arc9/fx/ricochet_07.wav",
+	")arc9/fx/ricochet_08.wav",
+	")arc9/fx/ricochet_09.wav",
+	")arc9/fx/ricochet_10.wav",
+	")arc9/fx/ricochet_11.wav",
+	")arc9/fx/ricochet_12.wav",
+	")arc9/fx/ricochet_13.wav",
+	")arc9/fx/ricochet_14.wav",
+	")arc9/fx/ricochet_15.wav"
+ }
 ARC9.PresetPath = "arc9_presets/"
 ARC9.PresetIconFormat = "arc9.png"
 
@@ -145,8 +174,8 @@ ARC9.RHIKHandBones = {
 }
 
 ARC9.TPIKBones = {
-    "ValveBiped.Bip01_L_Wrist",
-    "ValveBiped.Bip01_L_Ulna",
+    //"ValveBiped.Bip01_L_Wrist",
+    //"ValveBiped.Bip01_L_Ulna", --//better to not use these!
     "ValveBiped.Bip01_L_Hand",
     "ValveBiped.Bip01_L_Finger4",
     "ValveBiped.Bip01_L_Finger41",
@@ -163,8 +192,8 @@ ARC9.TPIKBones = {
     "ValveBiped.Bip01_L_Finger0",
     "ValveBiped.Bip01_L_Finger01",
     "ValveBiped.Bip01_L_Finger02",
-    "ValveBiped.Bip01_R_Wrist",
-    "ValveBiped.Bip01_R_Ulna",
+    //"ValveBiped.Bip01_R_Wrist",
+    //"ValveBiped.Bip01_R_Ulna", --//better to not use these!
     "ValveBiped.Bip01_R_Hand",
     "ValveBiped.Bip01_R_Finger4",
     "ValveBiped.Bip01_R_Finger41",
@@ -254,8 +283,15 @@ ARC9.CancelMultipliers = {
     },
 }
 
+-- 0.0254 is only applicable to model scale, since actual map scaling is based on 1 foot = 16 units.
+-- Not changing this in case some other addon is using the constant as stat
 ARC9.HUToM = 0.0254
+
+-- 10 / 360 / 60 is incorrect, how'd you even get it?
+-- MOA is 1/60 of a degree, 1 radian = 57.2958 degrees
+-- Not changing this in case some other addon is using the constant as stat
 ARC9.MOAToAcc = 10 / 360 / 60
+ARC9.TrueMOAToAcc = 1 / 60 / 57.2958
 
 ARC9.Version = "1.0"
 
@@ -265,15 +301,15 @@ ARC9.NADETHROWTYPE_EXPLODEINHANDS = 2
 
 ARC9.CHAN_AUTO = 0
 ARC9.CHAN_WEAPON = 1
-ARC9.CHAN_DISTANT = 2
-ARC9.CHAN_LAYER = 3
+ARC9.CHAN_DISTANT = 136
+ARC9.CHAN_LAYER = 137
 ARC9.CHAN_INDOOR = 139
-ARC9.CHAN_INDOORDISTANT = 5
+ARC9.CHAN_INDOORDISTANT = 144
 ARC9.CHAN_INDOORLAYER = 6
 ARC9.CHAN_FIDDLE = 6
-ARC9.CHAN_TRIGGER = 136
-ARC9.CHAN_MELEE = 137
-ARC9.CHAN_BREATH = 138
+ARC9.CHAN_TRIGGER = 141
+ARC9.CHAN_MELEE = 142
+ARC9.CHAN_BREATH = 143
 
 --USE THESE ENUMS IN A SWEP'S LUA FOR HL2 WEAPON REPLACEMENTS
 -- I.E.:    "SWEP.ARC9WeaponCategory = 1"     WILL REPLACE PISTOLS AND MAGNUM REVOLVERS
@@ -285,6 +321,8 @@ ARC9.WEAPON_AR = 4
 ARC9.WEAPON_SNIPER = 5
 ARC9.WEAPON_RPG = 6
 ARC9.WEAPON_MELEE = 7
+ARC9.WEAPON_FRAG = 8
+ARC9.WEAPON_SPECIAL = 9
 ARC9.WEAPON_MISC = 0
 
 ARC9.IMPULSE_TOGGLEATTS = 40
@@ -310,12 +348,20 @@ ARC9.HL2Replacements = {
     ["weapon_shotgun"] = {ARC9.WEAPON_SHOTGUN},
     ["weapon_crossbow"] = {ARC9.WEAPON_SNIPER},
     ["weapon_crowbar"] = {ARC9.WEAPON_MELEE},
-    ["weapon_rpg"] = {ARC9.WEAPON_RPG}
+    ["weapon_rpg"] = {ARC9.WEAPON_RPG},
+    ["weapon_frag"] = {ARC9.WEAPON_FRAG},
+    ["weapon_alyxgun"] = {ARC9.WEAPON_SPECIAL},
+    ["weapon_annabelle"] = {ARC9.WEAPON_SPECIAL, ARC9.WEAPON_SHOTGUN}
 }
 
 do
     local cvarDeveloper = GetConVar("developer")
     local cvarGetInt = FindMetaTable("ConVar").GetInt
+
+    ARC9.DevCheckCached = false 
+
+    local engineTickCount = engine.TickCount
+    local ARC9DevCheckTick, ARC9DevCheckCached, ARC9DevCheckLast = 0, false, 0
 
     if CLIENT and not game.SinglePlayer() then
         local localPlayer
@@ -331,12 +377,38 @@ do
             initLocalPlayer()
         end
 
+        local PlayerIsSuperAdmin = FindMetaTable("Player").IsSuperAdmin
+
         function ARC9.Dev(level)
-            return IsValid(localPlayer) and localPlayer:IsSuperAdmin() and cvarGetInt(cvarDeveloper) >= level
+            local now = engineTickCount()
+    
+            if ARC9DevCheckTick == now then return ARC9DevCheckCached end
+    
+            if (ARC9DevCheckLast or 0) > now then return ARC9DevCheckCached end
+            ARC9DevCheckLast = now + 64 -- 64 ticks before next check
+            
+            local output = IsValid(localPlayer) and PlayerIsSuperAdmin(localPlayer) and cvarGetInt(cvarDeveloper) >= level
+
+            ARC9DevCheckCached = output
+            ARC9DevCheckTick = now
+    
+            return output
         end
     else
         function ARC9.Dev(level)
-            return cvarGetInt(cvarDeveloper) >= level
+            local now = engineTickCount()
+    
+            if ARC9DevCheckTick == now then return ARC9DevCheckCached end
+    
+            if (ARC9DevCheckLast or 0) > now then return ARC9DevCheckCached end
+            ARC9DevCheckLast = now + 64 -- 64 ticks before next check
+            
+            local output = cvarGetInt(cvarDeveloper) >= level
+            
+            ARC9DevCheckCached = output
+            ARC9DevCheckTick = now
+    
+            return output
         end
     end
 end
@@ -362,3 +434,66 @@ function ARC9.IsPointOutOfBounds(vec)
         return true
     end
 end
+
+if CLIENT then
+    function ARC9.FormatViewModelAttachment(vOrigin, bFrom) -- from wiki
+        local view = render.GetViewSetup()
+
+        local vEyePos = view.origin
+        local aEyesRot = view.angles
+        local vOffset = vOrigin - vEyePos
+        local vForward = aEyesRot:Forward()
+
+        local nViewX = math.tan( view.fovviewmodel_unscaled * math.pi / 360)
+
+        if (nViewX == 0) then
+            vForward:Mul(vForward:Dot(vOffset))
+            vEyePos:Add(vForward)
+
+            return vEyePos
+        end
+
+        local nWorldX = math.tan( view.fov_unscaled * math.pi / 360)
+
+        if (nWorldX == 0) then
+            vForward:Mul(vForward:Dot(vOffset))
+            vEyePos:Add(vForward)
+
+            return vEyePos
+        end
+
+        local vRight = aEyesRot:Right()
+        local vUp = aEyesRot:Up()
+
+        if (bFrom) then
+            local nFactor = nWorldX / nViewX
+            vRight:Mul(vRight:Dot(vOffset) * nFactor)
+            vUp:Mul(vUp:Dot(vOffset) * nFactor)
+        else
+            local nFactor = nViewX / nWorldX
+            vRight:Mul(vRight:Dot(vOffset) * nFactor)
+            vUp:Mul(vUp:Dot(vOffset) * nFactor)
+        end
+
+        vForward:Mul(vForward:Dot(vOffset))
+
+        vEyePos:Add(vRight)
+        vEyePos:Add(vUp)
+        vEyePos:Add(vForward)
+
+        return vEyePos
+    end
+end
+
+
+hook.Add("InitPostEntity", "ARC9_phystweak", function() -- stolen from tacrp
+    if GetConVar("arc9_phystweak"):GetBool() then
+        if !physenv or !physenv.GetPerformanceSettings then print("[ARC9] How the hell you don't have physenv???? wtf wrong with your game") return end
+        local v = physenv.GetPerformanceSettings().MaxVelocity or 10000
+        if v < 10000 then
+            physenv.SetPerformanceSettings({MaxVelocity = 10000})
+            print("[ARC9] Increasing MaxVelocity for projectiles to behave as intended! (" .. v .. "-> 10000)")
+            print("[ARC9] Disable this behavior with 'arc9_phystweak 0'.")
+        end
+    end
+end)

@@ -5,6 +5,15 @@ local lang_cvar = GetConVar("arc9_language")
 local gmod_language = GetConVar("gmod_language")
 
 function ARC9:GetLanguage()
+    -- local date = os.date("*t")
+
+    -- local day = date.day
+    -- local month = date.month
+
+    -- if day == 1 and month == 4 then
+        -- return "uwu"
+    -- end -- REMOVE THIS AFTER 1 APRIL  (NOT OPTIMIZED!1)
+
     if lang_cvar:GetString() ~= "" then
         return string.lower(lang_cvar:GetString())
     end
@@ -69,8 +78,9 @@ end
 
 -- client languages aren't loaded through lua anymore. use gmod's stock localization system instead
 
-function ARC9:LoadLanguage(lang)
+function ARC9:LoadLanguage(lang, printshit)
     local cur_lang = lang or ARC9:GetLanguage()
+    local luacount, stringcount = 0, 0
 
     for _, v in pairs(file.Find("arc9/common/localization/*_" .. cur_lang .. ".lua", "LUA")) do
 
@@ -101,18 +111,28 @@ function ARC9:LoadLanguage(lang)
             hasany = true
         end
 
-        print("Loaded ARC9 language file " .. v .. " with " .. table.Count(L) .. " strings.")
+        -- print("Loaded ARC9 language file " .. v .. " with " .. table.Count(L) .. " strings.")
+        luacount = luacount + 1
+        stringcount = stringcount + table.Count(L)
         L = nil
         STL = nil
     end
+
+    if CLIENT and printshit then print("ARC9: Loaded " .. luacount .. " [" .. cur_lang .. "] localization files with " .. stringcount .. " strings in total.") end
 end
 
 function ARC9:LoadLanguages()
     ARC9.PhraseTable = {}
 
-    ARC9:LoadLanguage()
+    ARC9:LoadLanguage(_, true)
     ARC9:LoadLanguage(gmod_language:GetString())
     ARC9:LoadLanguage("en")
+    ARC9:LoadLanguage("de")
+    ARC9:LoadLanguage("es-es")
+    ARC9:LoadLanguage("ru")
+    ARC9:LoadLanguage("sv-se")
+    ARC9:LoadLanguage("uwu")
+    ARC9:LoadLanguage("zh-cn")
 end
 
 ARC9:LoadLanguages()
@@ -150,4 +170,21 @@ elseif SERVER then
         net.Broadcast()
     end)
 
+end
+
+function ARC9:UperCyrillic(str) -- Darsu asked for this.
+	local map = {
+		["а"]="А", ["б"]="Б", ["в"]="В", ["г"]="Г",
+		["д"]="Д", ["е"]="Е", ["ё"]="Ё", ["ж"]="Ж",
+		["з"]="З", ["и"]="И", ["й"]="Й", ["к"]="К",
+		["л"]="Л", ["м"]="М", ["н"]="Н", ["о"]="О",
+		["п"]="П", ["р"]="Р", ["с"]="С", ["т"]="Т",
+		["у"]="У", ["ф"]="Ф", ["х"]="Х", ["ц"]="Ц",
+		["ч"]="Ч", ["ш"]="Ш", ["щ"]="Щ", ["ъ"]="Ъ",
+		["ы"]="Ы", ["ь"]="Ь", ["э"]="Э", ["ю"]="Ю",
+		["я"]="Я"
+	}
+	return (str:gsub("[%z\1-\127\194-\244][\128-\191]*", function(c)
+		return map[c] or c
+	end))
 end

@@ -20,7 +20,7 @@ function SWEP:NPC_PrimaryAttack()
     self:DoProjectileAttack(owner:GetShootPos(), owner:GetAimVector():Angle(), spread)
 
     if !self:GetProcessedValue("BottomlessClip", true) then
-        self:TakePrimaryAmmo(self:GetProcessedValue("AmmoPerShot"))
+        self:TakePrimaryAmmo(self:GetProcessedValue("AmmoPerShot", true))
     end
 end
 
@@ -92,6 +92,7 @@ function SWEP:NPC_Reload()
 end
 
 local arc9_npc_atts = GetConVar("arc9_npc_atts")
+local arc9_ground_atts = GetConVar("arc9_ground_atts")
 
 function SWEP:NPC_Initialize()
     self.DefaultAttachments = table.Copy(self.Attachments)
@@ -99,52 +100,103 @@ function SWEP:NPC_Initialize()
     self:BuildSubAttachments(self.DefaultAttachments)
     self:SetBaseSettings()
 
-    self.LoadedPreset = true
+    self:SetNoPresets(true)
 
     if CLIENT then return end
+    
+    self.Primary.DefaultClip = self:GetProcessedValue("ClipSize")
+    self:SetClip1(self.ClipSize > 0 and math.max(1, self.Primary.DefaultClip) or self.Primary.DefaultClip)
 
-    if IsValid(self) then
-        if !self.WeaponWasGiven and arc9_npc_atts:GetBool() then
-            -- self:RollRandomAtts(self.Attachments)
+    timer.Simple(0.1, function()
+        if IsValid(self) and !self.WeaponWasGiven and arc9_npc_atts:GetBool() then
             self:QueueForRandomize()
         end
-        -- self:PostModify()
+    end)
+end
 
-        -- self:PruneAttachments()
-        -- self:SendWeapon()
-    end
+function SWEP:NoOwner_Initialize()
+    self:CallOnClient("NoOwner_Initialize")
+    self:SetNoPresets(true)
+    
+    if CLIENT then return end
+
+    timer.Simple(0.02, function()
+        if IsValid(self) and !self.WeaponWasGiven and arc9_ground_atts:GetBool() then
+            self:QueueForRandomize()
+        end
+    end)
 end
 
 function SWEP:QueueForRandomize()
     table.insert(ARC9.RandomizeQueue, self)
 end
 
-function SWEP:RollRandomAtts(tree)
+local alwaysinstallcats = {
+    "_gas",
+    "gasblock",
+    "buffer",
+    "_rec",
+    "_grip",
+    "_pg",
+    "barrel",
+    "upper",
+    "lower",
+    "hguard",
+    "handguard",
+    "_hg",
+    "bolt",
+    "_charge",
+}
+
+function SWEP:RollRandomAtts(tree, nofuther, isplayer, validate)
     local attchance = 66
+    if nofuther then attchance = 9999 end
 
     for i, slottbl in pairs(tree) do
         if slottbl.MergeSlots then
             if math.Rand(0, 100) > (100 / table.Count(slottbl.MergeSlots)) then continue end
         end
 
-        if math.Rand(0, 100) > attchance then continue end
+        local cat = slottbl.Category and (isstring(slottbl.Category) and slottbl.Category or slottbl.Category[1]) or nil
+        -- print(cat)
+        for _, needle in ipairs(alwaysinstallcats) do
+            if isstring(cat) and string.find(cat, needle) then attchance = 9999 end
+        end
 
+        if math.Rand(0, 100) > attchance then continue end
         local atts = ARC9.GetAttsForCats(slottbl.Category or "")
+
+        if nofuther and slottbl.Installed then table.RemoveByValue(atts, slottbl.Installed) end -- remove already installed att from pool
 
         -- if math.Rand(0, 100) > 100 / (table.Count(atts) + 1) then slottbl.Installed = nil continue end
 
-        local att = table.Random(atts)
+        -- local att = table.Random(atts)
+
+        local randompool = {}
+
+        for _, maybethisatt in ipairs(atts) do
+            local atttbl = ARC9.GetAttTable(maybethisatt)
+            if !atttbl then continue end
+            if atttbl.Ignore or slottbl.Hidden or self:GetAttBlocked(atttbl) then continue end
+            if !isplayer and atttbl.AttNotForNPCs then continue end
+            if validate and !self:CanAttach(slottbl.Address, maybethisatt, slottbl) then continue end
+
+            table.insert(randompool, maybethisatt)
+        end
+
+        local att = table.Random(randompool)
+
 
         if !att then slottbl.Installed = nil continue end
 
         local atttbl = ARC9.GetAttTable(att)
 
         if !atttbl then continue end
-        if atttbl.Ignore or slottbl.Hidden or atttbl.AttNotForNPCs then continue end
+        -- if atttbl.Ignore or slottbl.Hidden or atttbl.AttNotForNPCs or self:GetAttBlocked(atttbl) then continue end
 
         slottbl.Installed = att
 
-        if atttbl.Attachments then
+        if !nofuther and atttbl.Attachments then
             slottbl.SubAttachments = table.Copy(atttbl.Attachments)
             self:RollRandomAtts(slottbl.SubAttachments)
         end

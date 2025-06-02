@@ -4,10 +4,12 @@ local rtmat = GetRenderTarget("arc9_pipscope", rtsize, rtsize, false)
 local rtmat_spare = GetRenderTarget("arc9_rtmat_spare", ScrW(), ScrH(), false)
 
 function SWEP:ShouldDoScope()
-    if self:GetSight().Disassociate then return false end
+    if self:GetSight().Disassociate or self:GetOwner().ARC9NoScopes then return false end
 	
     return true
 end
+
+local arc9_fx_rtvm = GetConVar("arc9_fx_rtvm")
 
 function SWEP:DoRT(fov, atttbl)
     if ARC9.OverDraw then return end
@@ -18,6 +20,8 @@ function SWEP:DoRT(fov, atttbl)
 
     local sighttbl = self:GetSight()
 
+    local rtvm = arc9_fx_rtvm:GetBool()
+
     local rt = {
         x = 0,
         y = 0,
@@ -25,17 +29,21 @@ function SWEP:DoRT(fov, atttbl)
         h = rtsize,
         angles = rtang,
         origin = rtpos,
-        drawviewmodel = false,
+        drawviewmodel = rtvm or false,
         fov = fov,
         znear = 16,
         zfar = 30000
     }
+    
+    ARC9.RTScopeRenderFOV = fov
 
     render.PushRenderTarget(rtmat, 0, 0, rtsize, rtsize)
 
     if self:ShouldDoScope() then
         ARC9.OverDraw = true
+        ARC9.RTScopeRender = rtvm
         render.RenderView(rt)
+        ARC9.RTScopeRender = false
         ARC9.OverDraw = false
 
         cam.Start3D(rtpos, rtang, fov, 0, 0, rtsize, rtsize)
@@ -90,7 +98,7 @@ local rtsurf = Material("effects/arc9/rt")
 local shadow = Material("arc9/shadow.png", "mips smooth")
 local shadow2 = Material("arc9/shadow2.png", "mips smooth")
 
-local pp_ca_base, pp_ca_r, pp_ca_g, pp_ca_b = Material("pp/arc9/ca_base"), Material("pp/arc9/ca_r"), Material("pp/arc9/ca_g"), Material("pp/arc9/ca_b")
+-- local pp_ca_base, pp_ca_r, pp_ca_g, pp_ca_b = Material("pp/arc9/ca_base"), Material("pp/arc9/ca_r"), Material("pp/arc9/ca_g"), Material("pp/arc9/ca_b")
 
 local pp_cc_tab = {
     ["$pp_colour_addr"] = 0,
@@ -152,16 +160,16 @@ function SWEP:DoRTScopeEffects()
 
     if atttbl.RTScopeNoPP then return end
 
-    pp_ca_r:SetTexture("$basetexture", rtmat)
-    pp_ca_g:SetTexture("$basetexture", rtmat)
-    pp_ca_b:SetTexture("$basetexture", rtmat)
+    -- pp_ca_r:SetTexture("$basetexture", rtmat)
+    -- pp_ca_g:SetTexture("$basetexture", rtmat)
+    -- pp_ca_b:SetTexture("$basetexture", rtmat)
 
-    render.SetMaterial( pp_ca_r )
-    render.DrawScreenQuad()
-    render.SetMaterial( pp_ca_g )
-    render.DrawScreenQuad()
-    render.SetMaterial( pp_ca_b )
-    render.DrawScreenQuad()
+    -- render.SetMaterial( pp_ca_r )
+    -- render.DrawScreenQuad()
+    -- render.SetMaterial( pp_ca_g )
+    -- render.DrawScreenQuad()
+    -- render.SetMaterial( pp_ca_b )
+    -- render.DrawScreenQuad()
 
     -- Color modify
     DrawColorModify( pp_cc_tab )
@@ -187,14 +195,18 @@ local vec1 = Vector(1, 1, 1)
 local arc9_scope_r = GetConVar("arc9_scope_r")
 local arc9_scope_g = GetConVar("arc9_scope_g")
 local arc9_scope_b = GetConVar("arc9_scope_b")
+local arc9_cheapscopes = GetConVar("arc9_cheapscopes")
 
 function SWEP:DoRTScope(model, atttbl, active)
     local pos = model:GetPos()
     local ang = EyeAngles()
 
     if active then
+        local sightzang = 0
         if self:ShouldDoScope() then
+            self.RenderingRTScope = true
             local sight = self:GetSight()
+            sightzang = sight.Ang.z
             local sightpos = sight.ShadowPos or (sight.OriginalSightTable or {}).Pos or sight.Pos or Vector(0, 0, 0)
             sightpos = sightpos * ((sight.slottbl or {}).Scale or 1)
 
@@ -289,11 +301,13 @@ function SWEP:DoRTScope(model, atttbl, active)
 
                 surface.SetDrawColor(color)
                 surface.SetMaterial(reticle)
-                surface.DrawTexturedRect(rtr_x, rtr_y, size, size)
+                -- surface.DrawTexturedRect(rtr_x, rtr_y, size, size)
+                local counterrotation = self.LastViewModelAng.z - sightzang + self.SubtleVisualRecoilAng.z * 2 - EyeAngles().z
+                surface.DrawTexturedRectRotated(size / 2 + rtr_x, size / 2 + rtr_y, size, size, -counterrotation)
             end
 
             if atttbl.RTScopeDrawFunc then
-                atttbl.RTScopeDrawFunc(self, rtsize)
+                atttbl.RTScopeDrawFunc(self, rtsize, sight)
             end
 
             -- if drawfunc then -- doesn't seem to be working
@@ -330,11 +344,15 @@ function SWEP:DoRTScope(model, atttbl, active)
 
         render.PopRenderTarget()
         -- if sd > 0 then render.SetToneMappingScaleLinear(render.GetToneMappingScaleLinear()*0.2) end
-        if sd > 0.5 then render.SetToneMappingScaleLinear(vec1) end
 
+        if sd > 0.33 then render.SetToneMappingScaleLinear(LerpVector(sd * 1.5 - 0.5, render.GetToneMappingScaleLinear(), vec1)) end
+
+        local counterrotation = self.LastViewModelAng.z - sightzang + (arc9_cheapscopes:GetBool() and 0 or self.SubtleVisualRecoilAng.z * 2) - EyeAngles().z
         rtsurf:SetTexture("$basetexture", rtmat)
+        rtsurf:SetFloat("$rot", ((atttbl.RTScopeShadowIntensity or 0) > 1 or atttbl.RTCollimator) and counterrotation or 0)
+        -- rtsurf:SetMatrix("$basetexturetransform", Matrix({{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}))
 
-        model:SetSubMaterial()
+        -- model:SetSubMaterial()
 
         model:SetSubMaterial(atttbl.RTScopeSubmatIndex, "effects/arc9/rt")
     else
@@ -351,7 +369,9 @@ function SWEP:DoRTScope(model, atttbl, active)
 end
 
 function SWEP:GetCheapScopeScale(scale)
-    return 2 / (scale or 0.5)
+    local ratio = scale - (!self.ExtraSightDistanceNoRT and self:GetSight().ExtraSightDistance or 0) * 0.045
+
+    return 1 / ratio * (ScrW() / ScrH() / 1.12)
 end
 
 local hascostscoped = false
@@ -386,7 +406,7 @@ function SWEP:DoCheapScope(fov, atttbl)
     scrw = scrw
     scrh = scrh * scrh / scrw
 
-    local s = self:GetCheapScopeScale(atttbl.ScopeScreenRatio)
+    local s = self:GetCheapScopeScale(atttbl.ScopeScreenRatio or 0.5)
 
     local scrx = (ScrW() - scrw * s) / 2
     local scry = (ScrH() - scrh * s) / 2

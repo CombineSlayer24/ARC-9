@@ -108,7 +108,7 @@ function SWEP:ReceiveWeapon()
 
             for att, attc in pairs(oldcount) do
                 local atttbl = ARC9.GetAttTable(att)
-
+                if !atttbl then ErrorNoHaltWithStack("The attachment trying to be installed doesn't exist. '" .. att .. "'") continue end
                 if atttbl.Free then continue end
 
                 local has = attc
@@ -133,9 +133,10 @@ function SWEP:ReceiveWeapon()
         self:SetupModel(true)
         self:SetupModel(false)
         self:RefreshCustomizeMenu()
-
-        if !IsValid(self:GetOwner()) and (arc9_npc_autoreplace:GetBool() or arc9_replace_spawned:GetBool()) then -- very awful but i dont know how to make that value network properly
-            self.LoadedPreset = true
+        
+        if !self.HasSightsPoseparam then -- fuck you
+            if self:LookupPoseParameter("sights") != -1 then self.HasSightsPoseparam = true end
+            if self:LookupPoseParameter("firemode") != -1 then self.HasFiremodePoseparam = true end
         end
     else
         self:InvalidateCache()

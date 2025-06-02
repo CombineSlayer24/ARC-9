@@ -1,12 +1,13 @@
 L = {}
 
--- Folders
+//////// Folders
 L["folder.arc9"] = "ARC9"
-L["folder.arc9.community"] = "Gemenskap"
+L["folder.arc9.community"] = "ARC9/Gemenskap"
+L["folder.arc9.dovesinternational"] = "ARC9/Doves International"
 
 L["attachment.sticker"] = "Klistermärke"
 
--- Flat Camo
+//////// Flat Camo
 L["camo_arc9_base_flat_od.printname"] = "Olivgrön"
 L["camo_arc9_base_flat_od.compactname"] = "OG"
 L["camo_arc9_base_flat_od.description"] = "Standard Olivgrön kamouflage."
@@ -43,7 +44,7 @@ L["camo_arc9_base_flat_fde.printname"] = "Platt Mörk Jord"
 L["camo_arc9_base_flat_fde.compactname"] = "PMJ"
 L["camo_arc9_base_flat_fde.description"] = "Standard Platt Mörk Jord kamouflage."
 
--- Flat Colour
+//////// Flat Colour
 L["camo_arc9_base_flat_red.printname"] = "Röd"
 L["camo_arc9_base_flat_red.compactname"] = "Röd"
 L["camo_arc9_base_flat_red.description"] = "Simpel röd färg."
@@ -76,21 +77,20 @@ L["camo_arc9_base_flat_arc9orange.printname"] = "ARC9-Orange"
 L["camo_arc9_base_flat_arc9orange.compactname"] = "ARC9-Orange"
 L["camo_arc9_base_flat_arc9orange.description"] = "Den perfekta nyans av orange för den söta lilla ARC9-logga klistermärket."
 
--- Charms
+//////// Charms
 L["charm_gs_killcounter.printname"] = "Dråp Räknare"
 L["charm_gs_killcounter.compactname"] = "DRÅP"
 L["charm_gs_killcounter.description"] = "Enhet som spårar ditt vapens dråp statistik."
 
 L["charm_gs_clock.printname"] = "Simpel Klocka"
 L["charm_gs_clock.compactname"] = "KLOCKA"
-L["charm_gs_clock.description"] = "Device that displays the real-world time."
 L["charm_gs_clock.description"] = "Enhet som visar tiden i realtid."
 
 L["charm_gs_sticker.printname"] = "Klistermärke Panel"
 L["charm_gs_sticker.compactname"] = "KLISTER."
 L["charm_gs_sticker.description"] = "Enhet som tillåter en att sätta sitt egna klistermärke på dess skärm."
 
--- Stickers, Base
+//////// Stickers, Base
 L["sticker_spray.printname"] = "Spelare Sprej"
 L["sticker_spray.compactname"] = "Sprej"
 L["sticker_spray.description"] = [[Din egna sprej som ett klistermärkte!
@@ -131,7 +131,7 @@ Design av Darsu.
 
 Klistermärke inkluderad i ARC9-basen.]]
 
--- Stickers, Com. Wave 1
+//////// Stickers, Com. Wave 1
 L["sticker_alien_lean.printname"] = "Legalisera Utomjording Lutning"
 L["sticker_alien_lean.compactname"] = "LUT"
 L["sticker_alien_lean.description"] = [[Hoppa ner till Agartha med den vita pojkarna för en kopp av utomjordiskt lutning och... andra grejer.
@@ -276,5 +276,174 @@ L["sticker_arcbird.printname"] = "Arc-Fågel"
 L["sticker_arcbird.compactname"] = "Arc-Fågel"
 L["sticker_arcbird.description"] = [[Arc-Fågel.
 Design av Nori/Chewable.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+//////// Stickers, International
+L["sticker_dovesinternational_arc9.printname"] = "Doves International - ARC9"
+L["sticker_dovesinternational_arc9.compactname"] = "DI ARC9"
+L["sticker_dovesinternational_arc9.description"] = [["Doves International"-loggan i the ARC9-färgschemat.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_arctic.printname"] = "Doves International - Arktisk"
+L["sticker_dovesinternational_arctic.compactname"] = "DI Arktisk"
+L["sticker_dovesinternational_arctic.description"] = [["Doves International"-loggan i en arktisk vit färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_black.printname"] = "Doves International - Svart"
+L["sticker_dovesinternational_black.compactname"] = "DI Svart"
+L["sticker_dovesinternational_black.description"] = [["Doves International"-loggan i en svart färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_blackblue.printname"] = "Doves International - Svart & Blå"
+L["sticker_dovesinternational_blackblue.compactname"] = "DI Sva. & Blå"
+L["sticker_dovesinternational_blackblue.description"] = [["Doves International"-loggan i en svart & blå färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_blackgreen.printname"] = "Doves International - Svart & Grön"
+L["sticker_dovesinternational_blackgreen.compactname"] = "DI Sva. & Grö."
+L["sticker_dovesinternational_blackgreen.description"] = [["Doves International"-loggan i en svart & grön färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_blacktan.printname"] = "Doves International - Svart & Tan"
+L["sticker_dovesinternational_blacktan.compactname"] = "DI Sva. & Tan"
+L["sticker_dovesinternational_blacktan.description"] = [["Doves International"-loggan i en svart & tanfärgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_blacktrans.printname"] = "Doves International - Genomskinlig Svart"
+L["sticker_dovesinternational_blacktrans.compactname"] = "DI G. Svart"
+L["sticker_dovesinternational_blacktrans.description"] = [["Doves International"-loggan i en genomskinlig, monokromatisk svart färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_blue.printname"] = "Doves International - Blå"
+L["sticker_dovesinternational_blue.compactname"] = "DI Blå"
+L["sticker_dovesinternational_blue.description"] = [["Doves International"-loggan i en blå färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_bronze.printname"] = "Doves International - Brons"
+L["sticker_dovesinternational_bronze.compactname"] = "DI Brons"
+L["sticker_dovesinternational_bronze.description"] = [["Doves International"-loggan i en bronsfärgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_dovesinternational.printname"] = "Doves International"
+L["sticker_dovesinternational_dovesinternational.compactname"] = "DI"
+L["sticker_dovesinternational_dovesinternational.description"] = [["Doves International"-loggan i dess normala färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_error.printname"] = "Doves International - ERROR"
+L["sticker_dovesinternational_error.compactname"] = "DI ERROR"
+L["sticker_dovesinternational_error.description"] = [["Doves International"-loggan i en saknad textur färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_fox.printname"] = "Doves International - FOXHOUND"
+L["sticker_dovesinternational_fox.compactname"] = "DI FOXHOUND"
+L["sticker_dovesinternational_fox.description"] = [["Doves International"-loggan i en färgschema som liknar en viss specialstyrkeenhet.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_fullcolor.printname"] = "Doves International - Full Färg"
+L["sticker_dovesinternational_fullcolor.compactname"] = "DI Full Färg"
+L["sticker_dovesinternational_fullcolor.description"] = [["Doves International"-loggan i full färg.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_green.printname"] = "Doves International - Grön"
+L["sticker_dovesinternational_green.compactname"] = "DI Grön"
+L["sticker_dovesinternational_green.description"] = [["Doves International"-loggan i en grön färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_grey.printname"] = "Doves International - Grå"
+L["sticker_dovesinternational_grey.compactname"] = "DI Grå"
+L["sticker_dovesinternational_grey.description"] = [["Doves International"-loggan i en grå färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_monochrome.printname"] = "Doves International - Monokromatisk"
+L["sticker_dovesinternational_monochrome.compactname"] = "DI Mono."
+L["sticker_dovesinternational_monochrome.description"] = [["Doves International"-loggan i en monokromatisk svart & vit färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_navytan.printname"] = "Doves International - Marin & Tan"
+L["sticker_dovesinternational_navytan.compactname"] = "DI Mar. & Tan"
+L["sticker_dovesinternational_navytan.description"] = [["Doves International"-loggan i en marinblå & tan färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_pink.printname"] = "Doves International - Rosa"
+L["sticker_dovesinternational_pink.compactname"] = "DI Rosa"
+L["sticker_dovesinternational_pink.description"] = [["Doves International"-loggan i en rosa färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_purple.printname"] = "Doves International - Lila"
+L["sticker_dovesinternational_purple.compactname"] = "DI Lila"
+L["sticker_dovesinternational_purple.description"] = [["Doves International"-loggan i en lila färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_tan.printname"] = "Doves International - Tan"
+L["sticker_dovesinternational_tan.compactname"] = "DI Tan"
+L["sticker_dovesinternational_tan.description"] = [["Doves International"-loggan i en tan färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_teal.printname"] = "Doves International - Blågrön & Lila"
+L["sticker_dovesinternational_teal.compactname"] = "DI B.G. & Lil."
+L["sticker_dovesinternational_teal.description"] = [["Doves International"-loggan i en blågrön & lila färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_trans.printname"] = "Doves International - Transflaggan"
+L["sticker_dovesinternational_trans.compactname"] = "DI Trans."
+L["sticker_dovesinternational_trans.description"] = [["Doves International"-loggan i en färgschema som liknar Transflaggan.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_white.printname"] = "Doves International - Vit"
+L["sticker_dovesinternational_white.compactname"] = "DI Vit"
+L["sticker_dovesinternational_white.description"] = [["Doves International"-loggan i en vit färgschema.
+Design av M541/Neosun.
+
+Klistermärke inkluderad i ARC9-basen.]]
+
+L["sticker_dovesinternational_whitetrans.printname"] = "Doves International - Genomskinligt Vit"
+L["sticker_dovesinternational_whitetrans.compactname"] = "DI G. Vit"
+L["sticker_dovesinternational_whitetrans.description"] = [["Doves International"-loggan i en genomskinlig, monokromatisk vit färgschema.
+Design av M541/Neosun.
 
 Klistermärke inkluderad i ARC9-basen.]]

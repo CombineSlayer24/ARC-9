@@ -3,16 +3,17 @@ function SWEP:GetSightDelta()
 end
 
 function SWEP:EnterSights()
-    if self:GetSprintAmount() > 0 then return end
+    if self:GetSprintAmount() > 0.5 then return end
     if !self:GetProcessedValue("HasSights", true) then return end
     if self:GetCustomize() then return end
     if !self:GetProcessedValue("ReloadInSights", true) and self:GetReloading() then return end
     if self:GetHolsterTime() > 0 then return end
     if self:GetProcessedValue("UBGLInsteadOfSights", true) then return end
     if self:GetSafe() then return end
+    if self.SightsInterruptInspect and self:GetInspecting() then self:CancelInspect() end
     if self:GetAnimLockTime() > CurTime() and !self:GetReloading() then return end -- i hope this won't cause any issues later
     if self:GetValue("UBGL") and self:GetOwner():KeyDown(IN_USE) then return end
-    if self:GetIsNearWall() then return end
+    if self:GetIsNearWall() and math.abs(self:GetOwner():GetNW2Float("leaning_fraction", 0)) < 0.1 then return end -- leaning mod support
 	if self:HasAnimation("bash") and self.SetNextAiming then
 		if self.SetNextAiming > CurTime() then return end
 	end
@@ -99,7 +100,8 @@ function SWEP:BuildMultiSight()
     local keepbaseirons = true
     local keepmodularirons = true
 
-    local dev3 = ARC9.Dev(3)
+    -- local dev3 = ARC9.Dev(3)
+    local dev3 = false
 
     for i, slottbl in ipairs(self:GetSubSlotList()) do
         if !slottbl.Installed then continue end
@@ -112,7 +114,7 @@ function SWEP:BuildMultiSight()
 
             for _, sight in pairs(atttbl.Sights) do
                 if !self:GetUBGL() and sight.UBGLOnly then continue end
-                if self:GetUBGL() and self:GetProcessedValue("UBGLExclusiveSights") and !sight.UBGLOnly then continue end
+                if self:GetUBGL() and self:GetProcessedValue("UBGLExclusiveSights", true) and !sight.UBGLOnly then continue end
                 local s = {}
 
                 if CLIENT then
@@ -220,7 +222,11 @@ end
 function SWEP:SwitchMultiSight(amt)
     if self.NextSightSwitch and self.NextSightSwitch > CurTime() then return end
     self.NextSightSwitch = CurTime() + 0.15
-
+	
+	if self.SwitchSightTime and self.SwitchSightTime > CurTime() then
+		if self.SwitchSightDP then self.SwitchSightDP = 0 end
+	end
+	
     if game.SinglePlayer() then
         self:CallOnClient("InvalidateCache")
     end
@@ -245,7 +251,7 @@ function SWEP:SwitchMultiSight(amt)
             self.MultiSightTable[msi].OnSwitchToSight(self, self.MultiSightTable[msi].slottbl)
         end
 
-        if self.MultiSightTable[old_msi].OnSwitchFromSight then
+        if self.MultiSightTable[old_msi] and self.MultiSightTable[old_msi].OnSwitchFromSight then
             self.MultiSightTable[old_msi].OnSwitchFromSight(self, self.MultiSightTable[msi].slottbl)
         end
     end
@@ -253,8 +259,8 @@ function SWEP:SwitchMultiSight(amt)
     self:InvalidateCache()
 
     if msi != old_msi then
-        if self:StillWaiting() then return end
-
+		if self:StillWaiting() then return end
+		
         if (self.MultiSightTable[old_msi].atttbl or {}).ID == (self.MultiSightTable[msi].atttbl or {}).ID then
             if !self:GetUBGL() then -- for me
                 self:PlayAnimation("switchsights", 1, false)
@@ -277,8 +283,11 @@ do
     local swepExitSights = SWEP.ExitSights
     local swepEnterSights = SWEP.EnterSights
     local swepGetBipodAmount = SWEP.GetBipodAmount
+    local swepGetSprintAmount = SWEP.GetSprintAmount
     local swepBuildMultiSight = SWEP.BuildMultiSight
     local swepSwitchMultiSight = SWEP.SwitchMultiSight
+    local dtapconvar = GetConVar("arc9_dtap_sights")
+    local cvarGetBool = FindMetaTable("ConVar").GetBool
 
     function SWEP:ThinkSights()
         -- if self:GetSafe() then return end
@@ -305,31 +314,46 @@ do
         if toggle then
             if sighted and pratt then
                 swepExitSights(self)
-            elseif not sighted and pratt then
-                -- if self:GetOwner():KeyDown(IN_USE) then
-                    -- return
-                -- end why was this here?
-                swepEnterSights(self)
+            elseif not sighted and (inatt and self:GetSprintAmount() > 0 or pratt) then
+                self:EnterSights()
             end
     
             if pratt then
-                swepBuildMultiSight(self)
+                self:BuildMultiSight()
             end
         else
             if sighted and !inatt then
                 swepExitSights(self)
             elseif not sighted and inatt then
-                -- if self:GetOwner():KeyDown(IN_USE) then
-                    -- return
-                -- end why was this here?
-                swepEnterSights(self)
-                swepBuildMultiSight(self)
+                self:EnterSights()
+                self:BuildMultiSight()
             end
         end
 
         if sighted and playerKeyPressed(owner, ARC9.IN_SWITCHSIGHTS) then
             swepSwitchMultiSight(self)
         end
+	
+		if cvarGetBool(dtapconvar) then -- Double-Tap Switching Code
+			if sighted and playerKeyPressed(owner, IN_USE) and !self:StillWaiting() then
+				self.SwitchSightDP = (self.SwitchSightDP or 0) + 1
+				
+				if self.SwitchSightDP > 0 then
+				self.SwitchSightTime = CurTime() + 0.3
+					if self.SwitchSightDP == 2 then
+						swepSwitchMultiSight(self)
+					end
+				end
+			end
+
+			if self.SwitchSightDP and self.SwitchSightDP > 2 then
+				self.SwitchSightDP = 1
+			end
+			
+			if self.SwitchSightTime and CurTime() > self.SwitchSightTime then
+				if self.SwitchSightDP then self.SwitchSightDP = 0 end
+			end
+		end
 
         if self.HasSightsPoseparam then
             if CLIENT then
@@ -341,33 +365,28 @@ do
 end
 
 function SWEP:GetSight()
-    if ARC9.Dev(2) then
-        self:BuildMultiSight() -- this is what was fixing toggle sights
-    end
+    -- if ARC9.Dev(2) then
+    --     self:BuildMultiSight() -- this is what was fixing toggle sights
+    -- end
     -- if !self.MultiSightTable and self:GetValue("Sights") then self:BuildMultiSight() end
     return self.MultiSightTable[self:GetMultiSight()] or self:GetValue("IronSights")
 end
 
+local arc9_cheapscopes = GetConVar("arc9_cheapscopes")
+
 function SWEP:GetRTScopeFOV()
     local sights = self:GetSight()
-
+    
     if !sights then return self:GetOwner():GetFOV() end
 
-    local atttbl
+    local realzoom = self:GetRealZoom(sights)
 
-    if sights.BaseSight then
-        atttbl = self:GetTable()
-    else
-        atttbl = self:GetFinalAttTable(sights.slottbl)
-    end
+    local ratio = ((sights.atttbl and sights.atttbl.ScopeScreenRatio or self.ScopeScreenRatio) or 0.5) - (!self.ExtraSightDistanceNoRT and sights.ExtraSightDistance or 0) * 0.045
+    if self.PeekingIsSight and self.Peeking then ratio = ratio + 0.2 end
+    local vmfovratio = arc9_cheapscopes:GetBool() and sights.Magnification or self:GetSmoothedFOVMag() -- sights.Magnification
+    local funnyfov = self:ScaleFOVByWidthRatio(self:GetOwner():GetFOV(), 1 / vmfovratio * ratio / 1.5 / realzoom)
 
-    local scrolllevel = sights.ScrollLevel or 0
-
-    if atttbl.RTScopeAdjustable then
-        return Lerp(scrolllevel / atttbl.RTScopeAdjustmentLevels, atttbl.RTScopeFOVMax, atttbl.RTScopeFOVMin)
-    else
-        return sights.RTScopeFOV or atttbl.RTScopeFOV
-    end
+    return funnyfov
 end
 
 SWEP.ScrollLevels = {}
@@ -380,22 +399,22 @@ function SWEP:Scroll(amt)
 
     if !atttbl then return end
     if !atttbl.RTScopeAdjustable then return end
-    if !atttbl.RTScopeFOVMax then return end
-    if !atttbl.RTScopeFOVMin then return end
+    if !atttbl.RTScopeFOVMax and !atttbl.RTScopeMagnificationMax then return end
+    if !atttbl.RTScopeFOVMin and !atttbl.RTScopeMagnificationMin then return end
 
     local scrolllevel = sights.ScrollLevel or 0
     local old = scrolllevel
 
-    sights.ScrollLevel = scrolllevel + amt
+    sights.ScrollLevel = scrolllevel + (amt / atttbl.RTScopeAdjustmentLevels)
 
-    sights.ScrollLevel = math.Clamp(sights.ScrollLevel, 0, atttbl.RTScopeAdjustmentLevels)
+    sights.ScrollLevel = math.Clamp(sights.ScrollLevel, 0, 1)
 
     self.ScrollLevels[self:GetMultiSight()] = sights.ScrollLevel
 
-    if old != sights.ScrollLevel then
+    if old != sights.ScrollLevel and atttbl.ZoomSound != false then
         local soundtab1 = {
             name = "zoom",
-            sound = atttbl.ZoomSound or "arc9/useatt.wav",
+            sound = atttbl.ZoomSound or "arc9/useatt.ogg",
             pitch = math.Rand(95, 105),
             vol = 1,
             chan = CHAN_ITEM

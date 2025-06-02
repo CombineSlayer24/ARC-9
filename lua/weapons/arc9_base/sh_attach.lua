@@ -1,8 +1,16 @@
+SWEP.CustomizeDelta = 0
+
 function SWEP:Attach(addr, att, silent)
     local slottbl = self:LocateSlotFromAddress(addr)
+    if !slottbl then -- to not error and reset menu
+        self.BottomBarAddress = nil
+        self.BottomBarMode = 0
+        self:CreateHUD_Bottom()
+        return false 
+    end
     if (slottbl.Installed == att) then return false end
     if !self:CanAttach(addr, att) then return false end
-	local atttbl = ARC9.GetAttTable(att) or {}
+    local atttbl = ARC9.GetAttTable(att) or {}
 
     self:DetachAllFromSubSlot(addr, true)
 
@@ -24,9 +32,9 @@ end
 
 function SWEP:Detach(addr, silent)
     local slottbl = self:LocateSlotFromAddress(addr)
-    if !slottbl.Installed then return false end
+    if !slottbl or !slottbl.Installed then return false end
     if !self:CanDetach(addr) then return false end
-	local atttbl = ARC9.GetAttTable(slottbl.Installed) or {}
+    local atttbl = ARC9.GetAttTable(slottbl.Installed) or {}
 
     slottbl.Installed = nil
 
@@ -85,12 +93,13 @@ function SWEP:PostModify(toggleonly)
     self:InvalidateCache()
 
     if !toggleonly then
+        self.ScrollLevels = {} -- moved from invalidcache
         self:CancelReload()
         -- self:PruneAttachments()
         self:SetNthReload(0)
     end
 
-	local client = self:GetOwner()
+    local client = self:GetOwner()
     local validplayerowner = IsValid(client) and client:IsPlayer()
 
     local base = baseclass.Get(self:GetClass())
@@ -102,11 +111,13 @@ function SWEP:PostModify(toggleonly)
         self.PrintName = base.PrintName
         self.PrintName = self:GetValue("PrintName")
     end
-    
+
     if !self.PrintName then
         self.PrintName = base.PrintName
         self.PrintName = self:GetValue("PrintName")
     end
+    
+    self.Description = base.Description
 
     self.PrintName = self:RunHook("HookP_NameChange", self.PrintName)
     self.Description = self:RunHook("HookP_DescriptionChange", self.Description)
@@ -128,18 +139,21 @@ function SWEP:PostModify(toggleonly)
                 client:Flashlight(false)
             end
 
-            if self.LastAmmo != self:GetValue("Ammo") or self.LastClipSize != self:GetValue("ClipSize") then
-                if self.AlreadyGaveAmmo then
-                    self:Unload()
-                    self:SetRequestReload(true)
-                else
-                    self:SetClip1(self:GetProcessedValue("ClipSize"))
-                    self.AlreadyGaveAmmo = true
+            timer.Simple(0, function() -- PostModify gets called after each att attached
+                if self.LastAmmo != self:GetValue("Ammo") or self.LastClipSize != self:GetValue("ClipSize") then
+                    if self.AlreadyGaveAmmo then
+                        self:Unload()
+                        self:SetRequestReload(true)
+                    else
+                        self:SetClip1(self:GetProcessedValue("ClipSize"))
+                        self.AlreadyGaveAmmo = true
+                    end
                 end
-            end
+                
+                self.LastAmmo = self:GetValue("Ammo")
+                self.LastClipSize = self:GetValue("ClipSize")
+            end)
 
-            self.LastAmmo = self:GetValue("Ammo")
-            self.LastClipSize = self:GetValue("ClipSize")
 
             if self:GetValue("UBGL") then
                 if !self.AlreadyGaveUBGLAmmo then
@@ -171,7 +185,7 @@ function SWEP:PostModify(toggleonly)
                 self:SetClip1(capacity)
             end
 
-            if self:GetProcessedValue("BottomlessClip") then
+            if self:GetProcessedValue("BottomlessClip", true) then
                 self:RestoreClip()
             end
         end
@@ -197,8 +211,20 @@ end
 function SWEP:ThinkCustomize()
     local owner = self:GetOwner()
 
-    if owner:KeyPressed(ARC9.IN_CUSTOMIZE) and !owner:KeyDown(IN_USE) then
+    if owner:KeyPressed(ARC9.IN_CUSTOMIZE) and !owner:KeyDown(IN_USE) and !self:GetGrenadePrimed() then
         self:ToggleCustomize(!self:GetCustomize())
+    end
+
+    if game.SinglePlayer() or (CLIENT and IsFirstTimePredicted()) then
+        if self:GetCustomize() then
+            if self.CustomizeDelta < 1 then
+                self.CustomizeDelta = math.Approach(self.CustomizeDelta, 1, FrameTime() * 6.666666666666667)
+            end
+        else
+            if self.CustomizeDelta > 0 then
+                self.CustomizeDelta = math.Approach(self.CustomizeDelta, 0, FrameTime() * 6.666666666666667)
+            end
+        end
     end
 end
 
@@ -334,6 +360,8 @@ function SWEP:SlotInvalid(slottbl)
 
     local attcat = atttbl.Category
 
+    if attcat == "*" then return false end
+
     if !istable(attcat) then
         attcat = {attcat}
     end
@@ -394,7 +422,7 @@ end
 function SWEP:FirstAttForSlot(slottbl)
     local atts = ARC9.GetAttsForCats(slottbl.Category)
     for _, v in ipairs(atts) do
-        if ARC9:PlayerGetAtts(self:GetOwner(), v) > 0 then return v end
+        if ARC9:PlayerGetAtts(self:GetOwner(), v, self) > 0 then return v end
     end
     return false
 end
@@ -465,7 +493,7 @@ function SWEP:GetDependentIntegralSlots(addr, att, slottbl)
 
         -- TODO: Consider domino effect caused by the slot about to be added?
         if affected then
-			slots[#slots + 1] = tbl
+            slots[#slots + 1] = tbl
         end
     end
 
@@ -473,7 +501,7 @@ function SWEP:GetDependentIntegralSlots(addr, att, slottbl)
     if att then
         for _, slot in ipairs(atttbl.Attachments or {}) do
             if slot.Integral then
-				slots[#slots + 1] = slot
+                slots[#slots + 1] = slot
             end
         end
     end
@@ -511,7 +539,7 @@ function SWEP:CanAttach(addr, att, slottbl, ignorecount)
 
     local curtbl = ARC9.GetAttTable(slottbl.Installed) or {}
 
-    if !ignorecount and ARC9:PlayerGetAtts(self:GetOwner(), att) == 0 and (curtbl.InvAtt or slottbl.Installed) != invatt then return false end
+    if !ignorecount and ARC9:PlayerGetAtts(self:GetOwner(), att, self) == 0 and (curtbl.InvAtt or slottbl.Installed) != invatt then return false end
 
     if self:RunHook("Hook_BlockAttachment", {att = att, slottbl = slottbl}) == false then return false end
 
@@ -542,7 +570,12 @@ function SWEP:CanAttach(addr, att, slottbl, ignorecount)
     if self:GetAttBlocked(atttbl) then return false end
     if atttbl.AdminOnly and !self:GetOwner():IsAdmin() then return false end
 
+    -- If attaching will enable any Integral slots, we must own something to put in there
+    if self:GetSlotMissingDependents(addr, att, slottbl) then return false end
+
     local attcat = atttbl.Category
+
+    if attcat == "*" then return true end
 
     if !istable(attcat) then
         attcat = {attcat}
@@ -559,9 +592,6 @@ function SWEP:CanAttach(addr, att, slottbl, ignorecount)
 
     if !cat_true then return false end
 
-    -- If attaching will enable any Integral slots, we must own something to put in there
-    if self:GetSlotMissingDependents(addr, att, slottbl) then return false end
-
     return true
 end
 
@@ -571,6 +601,8 @@ function SWEP:CanDetach(addr)
     local slottbl = self:LocateSlotFromAddress(addr)
 
     if slottbl and slottbl.Integral then return false end
+
+    if self:RunHook("Hook_CanDetachAttachment", {addr = addr, slottbl = slottbl}) == false then return false end
 
     return true
 end
@@ -611,7 +643,7 @@ function SWEP:ToggleAllStatsOnF()
 
     if toggled then
         self:RunHook("Hook_ToggleAtts")
-        self:PostModify()
+        self:PostModify(true)
         return true
     end
 end

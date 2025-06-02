@@ -9,7 +9,7 @@ local function arc9toytown(amount) -- cool ass blur
         cam.Start2D()
             surface.SetMaterial(adsblur)
             surface.SetDrawColor(255, 255, 255, 255)
-            
+
             for i = 1, 5 * amount do -- 5 looking pretty cool
                 render.CopyRenderTargetToTexture(render.GetScreenEffectTexture())
                 surface.DrawTexturedRect(scrw*.5-scrh*.5, scrh*.58, scrh, scrh*0.42)
@@ -23,8 +23,9 @@ local bluramt = 0
 local arc9_fx_rtblur = GetConVar("arc9_fx_rtblur")
 local arc9_fx_animblur = GetConVar("arc9_fx_animblur")
 local arc9_fx_reloadblur = GetConVar("arc9_fx_reloadblur")
+local arc9_fx_inspectblur = GetConVar("arc9_fx_inspectblur")
 local arc9_cust_blur = GetConVar("arc9_cust_blur")
-local arc9_hud_darkmode = GetConVar("arc9_hud_darkmode")
+local arc9_hud_lightmode = GetConVar("arc9_hud_lightmode")
 local arc9_dev_greenscreen = GetConVar("arc9_dev_greenscreen")
 local arc9_cust_light = GetConVar("arc9_cust_light")
 local arc9_cust_light_brightness = GetConVar("arc9_cust_light_brightness")
@@ -33,6 +34,27 @@ local arc9_fx_adsblur = GetConVar("arc9_fx_adsblur")
 
 
 function SWEP:PreDrawViewModel()
+    if ARC9.RTScopeRender then -- basically a copy of code in that func for rt barrels but without useless stuff and bad stuff, and also offset of cam in scope
+        self:DoBodygroups(false)
+        local vm = self:GetVM()
+        if self.HasSightsPoseparam then
+            vm:SetPoseParameter("sights", self:GetSightAmount())
+        end
+        self:SetFiremodePose()
+        vm:InvalidateBoneCache()
+
+        local vmpso, vmagn, spso = self.LastViewModelPos, self.LastViewModelAng, self:GetSightPositions()
+        
+        vmpso = vmpso - vmagn:Forward() * (spso.y - 15) -- i sure do hope fixed number will be good (clueless)
+        vmpso = vmpso - vmagn:Up() * spso.z
+        vmpso = vmpso - vmagn:Right() * spso.x
+
+        cam.Start3D(vmpso, nil, ARC9.RTScopeRenderFOV * 0.85, nil, nil, nil, nil, 3, 100040)
+        render.DepthRange( 0.1, 0.1 )
+
+        return
+    end
+
     if ARC9.PresetCam then
         self:DoBodygroups(false)
         return
@@ -51,7 +73,7 @@ function SWEP:PreDrawViewModel()
         blurtarget = 2 * sightamount
     end
 
-    if (arc9_fx_reloadblur:GetBool() and self:GetReloading()) or (arc9_fx_animblur:GetBool() and self:GetReadyTime() >= CurTime()) then
+    if (arc9_fx_reloadblur:GetBool() and self:GetReloading() and sightamount < 0.99) or (arc9_fx_animblur:GetBool() and self:GetReadyTime() >= CurTime()) or (arc9_fx_inspectblur:GetBool() and self:GetInspecting() and sightamount < 0.01) then
         blurtarget = 1.5
         shouldrtblur = true
     end
@@ -63,19 +85,21 @@ function SWEP:PreDrawViewModel()
             blurtarget = 5 * custdelta
         end
 
+        local scrw, scrh = ScrW(), ScrH()
+
         cam.Start2D()
             surface.SetDrawColor(15, 15, 15, 180 * custdelta)
-            surface.DrawRect(0, 0, ScrW(), ScrH())
+            surface.DrawRect(0, 0, scrw, scrh)
             surface.SetDrawColor(0, 0, 0, 255 * custdelta)
-            if !arc9_hud_darkmode:GetBool() then
+            if arc9_hud_lightmode:GetBool() then
                 surface.SetMaterial(vignette)
-                surface.DrawTexturedRect(0, 0, ScrW(), ScrH())
+                surface.DrawTexturedRect(0, 0, scrw, scrh)
             end
 
             if arc9_dev_greenscreen:GetBool() then
                 -- print(GetConVar("mat_bloom_scalefactor_scalar"):SetFloat())
                 surface.SetDrawColor(0, 255, 0, 255 * custdelta)
-                surface.DrawRect(0, 0, ScrW(), ScrH())
+                surface.DrawRect(0, 0, scrw, scrh)
             end
         cam.End2D()
     end
@@ -109,9 +133,10 @@ function SWEP:PreDrawViewModel()
 
     local bipodamount = self:GetBipodAmount()
     local vm = self:GetVM()
+    if !IsValid(vm) then return end
 
     if self.HasSightsPoseparam then
-        vm:SetPoseParameter("sights", math.max(sightamount, bipodamount))
+        vm:SetPoseParameter("sights", math.max(sightamount, bipodamount, custdelta))
     end
 
     local bonemods = self:GetValue("BoneMods")
@@ -126,7 +151,6 @@ function SWEP:PreDrawViewModel()
         vm:ManipulateBoneScale(boneindex, k.scale or vector_origin)
     end end
     
-    vm:InvalidateBoneCache()
 
     local vmfov = self:GetViewModelFOV()
 
@@ -140,37 +164,84 @@ function SWEP:PreDrawViewModel()
 
     vm:SetSubMaterial()
 
+    for ind = 0, 31 do
+        local val = self:GetProcessedValue("SubMaterial" .. ind, true)
+        if val then
+            vm:SetSubMaterial(ind, val)
+        end
+    end
+
+    self.RenderingRTScope = false 
     if self:GetHolsterTime() < CurTime() and self.RTScope and sightamount > 0 then
         self:DoRTScope(vm, self:GetTable(), sightamount > 0)
     end
 
     vm:SetMaterial(self:GetProcessedValue("Material", true))
 
-    cam.IgnoreZ(true)
+    render.DepthRange( 0.0, 0.1 )
+    if ARC9.PresetCam or custdelta > 0 then cam.IgnoreZ(true) end
 
     self:SetFiremodePose()
     
     if self.HasSightsPoseparam then
-        vm:SetPoseParameter("sights", math.max(sightamount, bipodamount))
+        vm:SetPoseParameter("sights", math.max(sightamount, bipodamount, custdelta))
     end
 
+    vm:InvalidateBoneCache()
+    
     if sightamount > 0.75 and getsights.FlatScope and !getsights.FlatScopeKeepVM then
         render.SetBlend(0)
     end
 end
 
 function SWEP:ViewModelDrawn()
+    self.StoredVMAngles = self:GetCameraControl()
     self:DrawCustomModel(false)
+    render.DepthRange( 0.0, 0.1 )
     self:DoRHIK()
+    if ARC9.RTScopeRender then return end
     self:PreDrawThirdArm()
     self:DrawFlashlightsVM()
 
     self:DrawLasers(false)
-    self:GetVM():SetMaterial("")
+    local vm = self:GetVM()
+    if !IsValid(vm) then return end
+    vm:SetMaterial("")
+	for ind = 0, 31 do
+		vm:SetSubMaterial(ind, "")
+	end
+
+    
+    local newpcfs = {}
+
+    for _, pcf in ipairs(self.PCFs) do
+        if IsValid(pcf) then
+            pcf:Render()
+            table.insert(newpcfs, pcf)
+        end
+    end
+
+    if !inrt then self.PCFs = newpcfs end
+
+    local newfx = {}
+
+    for _, fx in ipairs(self.ActiveEffects) do
+        if IsValid(fx) then
+            if !fx.VMContext then continue end
+            fx:DrawModel()
+            table.insert(newfx, fx)
+        end
+    end
+
+    if !inrt then self.ActiveEffects = newfx end
 end
 
 function SWEP:PostDrawViewModel()
+    if !IsValid(self:GetVM()) then return end
+    local inrt = ARC9.RTScopeRender
 
+    self:DrawTranslucentPass()
+    
     local newmzpcfs = {}
 
     for _, pcf in ipairs(self.MuzzPCFs) do
@@ -180,33 +251,7 @@ function SWEP:PostDrawViewModel()
         end
     end
 
-    self.MuzzPCFs = newmzpcfs
-
-    cam.Start3D()
-        cam.IgnoreZ(false)
-        local newpcfs = {}
-
-        for _, pcf in ipairs(self.PCFs) do
-            if IsValid(pcf) then
-                pcf:Render()
-                table.insert(newpcfs, pcf)
-            end
-        end
-
-        self.PCFs = newpcfs
-
-        local newfx = {}
-
-        for _, fx in ipairs(self.ActiveEffects) do
-            if IsValid(fx) then
-                if !fx.VMContext then continue end
-                fx:DrawModel()
-                table.insert(newfx, fx)
-            end
-        end
-
-        self.ActiveEffects = newfx
-    cam.End3D()
+    if !inrt then self.MuzzPCFs = newmzpcfs end
 
     if ARC9.PresetCam then return end
 
@@ -217,6 +262,9 @@ function SWEP:PostDrawViewModel()
         cam.End3D()
     end
 
+    if inrt then return end
+
+    self.RenderingHolosight = false
     cam.Start3D(nil, nil, self:WidescreenFix(self:GetViewModelFOV()), nil, nil, nil, nil, 1, 10000)
     if self.VModel then
         for _, model in ipairs(self.VModel) do

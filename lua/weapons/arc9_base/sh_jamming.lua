@@ -1,3 +1,5 @@
+local arc9_mod_overheat = GetConVar("arc9_mod_overheat")
+
 function SWEP:RollJam()
     if !self:GetProcessedValue("Malfunction", true) then return end
     if self:Clip1() == 0 and self.MalfunctionNeverLastShoot then return end
@@ -9,7 +11,10 @@ function SWEP:RollJam()
             self:SetJammed(true)
         end
 
-        -- self:ExitSights()
+		if self:GetProcessedValue("MalfunctionExitSights", true) then
+			self:ExitSights()
+		end
+		
         self:PlayAnimation("jam", 1, true)
         local soundtab1 = {
             name = "jam",
@@ -17,7 +22,7 @@ function SWEP:RollJam()
             channel = ARC9.CHAN_FIDDLE
         }
         self:PlayTranslatedSound(soundtab1)
-        self:SetNextPrimaryFire(CurTime() + self:GetProcessedValue("MalfunctionWait"))
+        self:SetNextPrimaryFire(CurTime() + self:GetProcessedValue("MalfunctionWait", true))
         self:SetNeedsCycle(false)
 
         return true
@@ -25,9 +30,9 @@ function SWEP:RollJam()
 end
 
 function SWEP:DoHeat()
-    if !self:GetProcessedValue("Overheat", true) then return end
+    if !arc9_mod_overheat:GetBool() or !self:GetProcessedValue("Overheat", true) then return end
 
-    self:SetHeatAmount(self:GetHeatAmount() + self:GetProcessedValue("HeatPerShot"))
+    self:SetHeatAmount(self:GetHeatAmount() + self:GetProcessedValue("HeatPerShot", true))
 
     if self:GetHeatAmount() >= self:GetProcessedValue("HeatCapacity") then
         self:SetHeatAmount(self:GetProcessedValue("HeatCapacity"))
@@ -35,9 +40,10 @@ function SWEP:DoHeat()
             self:SetHeatLockout(true)
         end
 
-        self:SetJammed(true)
-
-        self:SetNextPrimaryFire(CurTime() + self:GetProcessedValue("MalfunctionWait"))
+        if self:HasAnimation(self:TranslateAnimation("fix")) then
+            self:SetJammed(true)
+            self:SetNextPrimaryFire(CurTime() + self:GetProcessedValue("MalfunctionWait", true))
+        end
     end
 end
 
@@ -55,7 +61,7 @@ function SWEP:FixHeat()
 
     
     self.StartedFixingJam = true
-    local t = self:PlayAnimation("fix", self:GetProcessedValue("OverheatTime"), true)
+    local t = self:PlayAnimation("fix", self:GetProcessedValue("OverheatTime", true), true)
     self:SetInSights(false)
 
     self:SetTimer(t * 0.8, function()
@@ -74,9 +80,9 @@ function SWEP:ThinkHeat(dt)
 
     if heat <= 0 then return end
 
-    if !self:GetProcessedValue("Overheat", true) then return end
+    -- if !self:GetProcessedValue("Overheat", true) then return end
 
-    if self:GetNextPrimaryFire() + self:GetProcessedValue("HeatDelayTime") < CurTime() then
+    if self:GetNextPrimaryFire() + self:GetProcessedValue("HeatDelayTime", true) < CurTime() then
         heat = heat - (dt * self:GetProcessedValue("HeatDissipation"))
         heat = math.Clamp(heat, 0, math.huge)
 

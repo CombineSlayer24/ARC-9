@@ -84,20 +84,28 @@ function SWEP:TranslateAnimation(seq)
         seq = seq[math.Round(util.SharedRandom("ARC9_animtr", 1, #seq))]
     end
 
-    local rando = {seq}
+    if self:HasAnimation("1_" .. seq, true) then -- if theres atleast 1 random seq
+        local rando = {seq}
 
-    local i = 1
-    while self:HasAnimation(tostring(i) .. "_" .. seq, true) do
-        table.insert(rando, tostring(i) .. "_" .. seq)
-        i = i + 1
+        local i = 1
+        while self:HasAnimation(tostring(i) .. "_" .. seq, true) do
+            table.insert(rando, tostring(i) .. "_" .. seq)
+            i = i + 1
+        end
+
+        seq = rando[math.Round(util.SharedRandom("ARC9_animtr", 1, #rando))]
     end
-
-    seq = rando[math.Round(util.SharedRandom("ARC9_animtr", 1, #rando))]
 
     return seq
 end
 
+local alwayshave = {
+    ["idle"] = true,
+    ["fire"] = true,
+}
+
 function SWEP:HasAnimation(seq, lq)
+    if alwayshave[seq] then return true end
     local seqr = self:RunHook("Hook_BlockHasAnimation", seq)
 
     if !seqr then return false end
@@ -145,7 +153,7 @@ function SWEP:GetAnimationEntry(seq)
         else
             if self.Animations[seq] then
                 return self.Animations[seq]
-            elseif !self:GetProcessedValue("SuppressDefaultAnimations") then
+            elseif !self:GetProcessedValue("SuppressDefaultAnimations", true) then
                 return {
                     Source = seq,
                     Time = self:GetSequenceTime(seq)

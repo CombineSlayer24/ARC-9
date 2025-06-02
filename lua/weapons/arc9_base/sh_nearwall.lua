@@ -19,12 +19,15 @@ do
     local angleForward = FindMetaTable("Angle").Forward
     local entityGetOwner = FindMetaTable("Entity").GetOwner
 
-    function SWEP:GetIsNearWall()
-        local now = engine.TickCount()
+    local engineTickCount = engine.TickCount
 
-        if self.NearWallTick == now then
-            return self.NearWallCached
-        end
+    function SWEP:GetIsNearWall()
+        local now = engineTickCount()
+
+        if self.NearWallTick == now then return self.NearWallCached end
+
+        if (self.NearWallLastCheck or 0) > now then return self.NearWallCached end
+        self.NearWallLastCheck = now + 8 -- 8 ticks before next check
 
         local length = self:GetProcessedValue("BarrelLength", true)
 
@@ -55,8 +58,11 @@ local math_Approach = math.Approach
 local FrameTime = FrameTime
 
 function SWEP:ThinkNearWall()
+    local time = self:GetProcessedValue("SprintToFireTime", true) * 0.75 -- less time
+    if math.abs(self:GetOwner():GetNW2Float("leaning_fraction", 0)) > 0.1 then time = 0.1 end -- leaning mod support
+
     self:SetNearWallAmount(math_Approach(
         self.dt.NearWallAmount,
         swepGetIsNearWall(self) and 1 or 0,
-        FrameTime() / self:GetProcessedValue("SprintToFireTime")))
+        FrameTime() / time))
 end

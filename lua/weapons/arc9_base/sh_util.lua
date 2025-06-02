@@ -6,9 +6,13 @@ end
 
 function SWEP:DoPlayerAnimationEvent(event)
     -- if CLIENT and self:ShouldTPIK() then return end
-    if event then self:GetOwner():AnimRestartGesture(1, event, true) end
+    if event and IsValid(self:GetOwner()) then self:GetOwner():AnimRestartGesture(1, event, true) end
     if SERVER then self:CallOnClient("DoPlayerAnimationEvent", event) end
 end
+
+local ENTITY = FindMetaTable("Entity")
+local entityEmitSound = ENTITY.EmitSound
+local sp = game.SinglePlayer()
 
 function SWEP:PlayTranslatedSound(soundtab)
     soundtab = self:RunHook("HookP_TranslateSound", soundtab) or soundtab
@@ -20,14 +24,18 @@ function SWEP:PlayTranslatedSound(soundtab)
             pitch = math.random(pitch[1], pitch[2])
         end
 
-        self:EmitSound(
+        local cfilter = nil
+        if SERVER and !sp then cfilter = soundtab.networktoeveryone and ARC9.EveryoneRecipientFilter end
+        
+        entityEmitSound(self,
             soundtab.sound,
             soundtab.level,
             pitch,
             soundtab.volume,
             soundtab.channel,
             soundtab.flags,
-            soundtab.dsp
+            soundtab.dsp,
+            cfilter
         )
     end
 end
@@ -92,32 +100,57 @@ end
 -- length0: Shoulder to elbow
 -- length1: Elbow to hand
 -- rotation: rotates??? prevents chicken winging
-function SWEP:Solve2PartIK(start_p, end_p, length0, length1, rotation)
-    -- local circle = math.sqrt((end_p.x-start_p.x) ^ 2 + (end_p.y-start_p.y) ^ 2 )
-    -- local length2 = math.sqrt(circle ^ 2 + (end_p.z-start_p.z) ^ 2 )
+function SWEP:Solve2PartIK(start_p, end_p, length0, length1, sign, angs)
     local length2 = (start_p - end_p):Length()
     local cosAngle0 = math.Clamp(((length2 * length2) + (length0 * length0) - (length1 * length1)) / (2 * length2 * length0), -1, 1)
     local angle0 = -math.deg(math.acos(cosAngle0))
     local cosAngle1 = math.Clamp(((length1 * length1) + (length0 * length0) - (length2 * length2)) / (2 * length1 * length0), -1, 1)
     local angle1 = -math.deg(math.acos(cosAngle1))
+
     local diff = end_p - start_p
-    local angle2 = math.deg(math.atan2(-math.sqrt(diff.x ^ 2 + diff.y ^ 2), diff.z)) - 90
+    diff:Normalize()
+
+    local angle2 = math.deg(math.atan2(-math.sqrt(diff.x * diff.x + diff.y * diff.y), diff.z)) - 90
     local angle3 = -math.deg(math.atan2(diff.x, diff.y)) - 90
+    angle3 = math.NormalizeAngle(angle3)
+
+    local diff2 = -vector_up:Angle()
+
     local axis = diff * 1
     axis:Normalize()
+    
+    local torsoang = vector_up:Angle()
+
     local Joint0 = Angle(angle0 + angle2, angle3, 0)
-    Joint0:RotateAroundAxis(axis, rotation)
-    Joint0 = (Joint0:Forward() * length0)
+
+    local asdot = -vector_up:Dot(torsoang:Up())
+    local diffa = math.deg(math.acos(asdot)) + (sign < 0 and -0 or 0)
+    local diffa2 = 90 + (sign > 0 and -30 or 30)
+    
+    local tors = torsoang:Up()
+    local torsoright = -math.deg(math.atan2(tors.x, tors.y)) - 120 - 60 * sign
+    torsoright = angs.y + 120 * sign
+    
+    Joint0:RotateAroundAxis(Joint0:Forward(), diffa2)
+    Joint0:RotateAroundAxis(axis, angle3 - torsoright)
+    local ang1 = -(-Joint0)
+
+    local Joint0 = Joint0:Forward() * length0
+
     local Joint1 = Angle(angle0 + angle2 + 180 + angle1, angle3, 0)
-    Joint1:RotateAroundAxis(axis, rotation)
-    Joint1 = (Joint1:Forward() * length1)
+    Joint1:RotateAroundAxis(Joint1:Forward(), diffa2)
+    Joint1:RotateAroundAxis(axis, angle3 - torsoright)
+    local ang2 = -(-Joint1)
+
+    local Joint1 = Joint1:Forward() * length1
+
     local Joint0_F = start_p + Joint0
     local Joint1_F = Joint0_F + Joint1
 
-    return Joint0_F, Joint1_F
+    return Joint0_F, Joint1_F, ang1, ang2
 end
--- returns two vectors
--- upper arm and forearm
+-- returns two vectors and then two angles
+-- upper arm and forearm respectively
 
 function SWEP:RotateAroundPoint(pos, ang, point, offset, offset_ang)
     local v = Vector(0, 0, 0)
@@ -168,7 +201,7 @@ function SWEP:RotateAroundPoint2(pos, ang, point, offset, offset_ang)
 end
 
 function SWEP:IsUsingRTScope()
-    return self:GetSightAmount() > 0.5 and self:GetSight() and self:GetSight().atttbl and self:GetSight().atttbl.RTScope
+    return self:GetSightAmount() > 0.5 and self:GetSight() and self:GetSight().atttbl and self:GetSight().atttbl.RTScope and !self:GetSight().Disassociate
 end
 
 if CLIENT then

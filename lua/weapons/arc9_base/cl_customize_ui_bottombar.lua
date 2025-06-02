@@ -4,12 +4,16 @@ local foldericon = Material("arc9/ui/folder.png", "mips smooth")
 local folderfavicon = Material("arc9/ui/folder_favorites.png", "mips smooth")
 local backicon = Material("arc9/ui/back.png", "mips smooth")
 local adminicon = Material("arc9/admin.png", "mips smooth")
+local modesicon = Material("arc9/ui/modes.png", "mips smooth")
+local camosicon = Material("arc9/ui/paint.png", "mips smooth")
 
 local ARC9ScreenScale = ARC9.ScreenScale
 
 local clicksound = "arc9/newui/uimouse_click.ogg"
 local foldersound = "arc9/newui/uimouse_click_forward.ogg"
 local backsound = "arc9/newui/uimouse_click_return.ogg"
+local tabsound = "arc9/newui/uimouse_click_tab.ogg"
+local favsound = "arc9/newui/ui_part_favourite1.ogg"
 
 local function spacer(self, scroll, margin)
     local spacer = vgui.Create("DPanel", scroll)
@@ -55,25 +59,53 @@ function SWEP:ClearBottomBar()
     self:ClearAttInfoBar()
 end
 
-local function recursivefoldercount(folder)
+local function recursivefoldercount(wep, folder, ownedtbl)
+    if !istable(folder) then return 0 end
+
+    local owned = 0
     local count = 0
 
     for i, k in pairs(folder) do
         if istable(k) then
-            count = count + recursivefoldercount(k)
+            local cowned, ccount = recursivefoldercount(wep, k, ownedtbl)
+            owned = owned + cowned
+            count = count + ccount
         else
             local atttbl = ARC9.GetAttTable(i)
-
             if !atttbl then continue end
 
-            if atttbl.Free or GetConVar("arc9_hud_showunowned"):GetBool() or GetConVar("arc9_free_atts"):GetBool() or ARC9:PlayerGetAtts(i) > 0 then
+            if ARC9:PlayerGetAtts(LocalPlayer(), i, wep) > 0 then
+                if ownedtbl then
+                    ownedtbl[i] = true
+                end
+                owned = owned + 1
+                count = count + 1
+            elseif GetConVar("arc9_hud_showunowned"):GetBool() then
                 count = count + 1
             end
         end
     end
 
-    return count
+    return owned, count
 end
+
+local function tworandomstrings(tbl)
+    local valid_strings = {}
+    for key, _ in pairs(tbl) do
+        if isstring(key) and !string.find(key, "%u") then table.insert(valid_strings, key) end
+    end
+
+    local count = #valid_strings
+    if count < 2 then return false end
+
+    local first, second = math.random(count), math.random(count)
+    while second == first do
+        second = math.random(count)
+    end
+
+    return valid_strings[first], valid_strings[second]
+end
+
 
 local function enterfolder(self, scroll, slottbl, fname)
     if fname != true then
@@ -156,47 +188,99 @@ local function enterfolder(self, scroll, slottbl, fname)
     scroll:SetWide(self.BottomBar:GetWide() - anchor:GetWide())
 
     local foldercount = 0
-
-    for folder, children in SortedPairs(folders) do
-        if !folders then
-            table.remove(self.BottomBarPath)
-        end
-        if isbool(children) then continue end
-
-        local count = recursivefoldercount(children)
-
-        -- if count > 99 then count = "99+" end
-
-        if count == 0 then continue end
-
-        foldercount = foldercount + 1
-
-        local folderbtn = vgui.Create("ARC9AttButton", scroll)
-
-        folderbtn:SetButtonText(folder == "!favorites" and ARC9:GetPhrase("folder.favorites") or ARC9:GetPhrase("folder." .. folder) or folder)
-        folderbtn:SetIcon(folder == "!favorites" and folderfavicon or foldericon)
-        folderbtn:SetEmpty(true)
-
-        folderbtn:DockMargin(0, 0, ARC9ScreenScale(4), 0)
-        folderbtn:Dock(LEFT)
-
-        scroll:AddPanel(folderbtn)
-        table.insert(scrolleles, folderbtn)
-        folderbtn.folder = folder
-
-        folderbtn:SetFolderContain(tostring(count))
-
-        folderbtn.OnMousePressed = function(self2, kc)
-            if kc == MOUSE_LEFT then
-                enterfolder(self, scroll, slottbl, self2.folder)
-                surface.PlaySound(foldersound)
+    if folders then
+        for folder, children in SortedPairs(folders) do
+            if !folders then
+                table.remove(self.BottomBarPath)
             end
-        end
+            if isbool(children) then continue end
 
-        folderbtn.Think = function(self2)
-            if !IsValid(self) then return end
-            if self2:IsHovered() then
-                self.CustomizeHints["customize.hint.select"] = "customize.hint.select"
+            local ownedchildren = {}
+            local owned, count = recursivefoldercount(self, children, ownedchildren)
+
+            -- if count > 99 then count = "99+" end
+
+            if count == 0 then continue end
+
+            local display_count = count > owned and (owned .. "/" .. count) or count
+
+            foldercount = foldercount + 1
+
+            local folderbtn = vgui.Create("ARC9AttButton", scroll)
+
+            local isfav = folder == "!favorites"
+            folderbtn:SetButtonText(isfav and ARC9:GetPhrase("folder.favorites") or ARC9:GetPhrase("folder." .. folder) or folder)
+            folderbtn:SetIcon(isfav and folderfavicon or foldericon)
+            folderbtn:SetEmpty(true)
+            folderbtn:SetEmptyGreyOut(owned == 0)
+
+            local randomatt1, randomatt2 = tworandomstrings(ownedchildren)
+
+            if randomatt1 and randomatt2 then
+                randomatt1 = ARC9.GetAttTable(randomatt1)
+                randomatt2 = ARC9.GetAttTable(randomatt2)
+
+                if istable(randomatt1) and randomatt1.Icon then
+                    folderbtn:SetFolderIcon(1, randomatt1.Icon, isfav)
+                end
+
+                if istable(randomatt2) and randomatt2.Icon then
+                    folderbtn:SetFolderIcon(2, randomatt2.Icon, isfav)
+                end
+            elseif randomatt1 then
+                randomatt1 = ARC9.GetAttTable(table.GetKeys(ownedchildren)[1])
+                if istable(randomatt1) and randomatt1.Icon then
+                    folderbtn:SetFolderIcon(1, randomatt1.Icon, isfav)
+                end
+            end
+
+            folderbtn:DockMargin(0, 0, ARC9ScreenScale(4), 0)
+            folderbtn:Dock(LEFT)
+
+            scroll:AddPanel(folderbtn)
+            table.insert(scrolleles, folderbtn)
+            folderbtn.folder = folder
+
+            folderbtn:SetFolderContain(tostring(display_count))
+
+            folderbtn.OnMousePressed = function(self2, kc)
+                if kc == MOUSE_LEFT then
+                    enterfolder(self, scroll, slottbl, self2.folder)
+                    surface.PlaySound(foldersound)
+                end
+                -- if kc == MOUSE_RIGHT then -- randomizing attachments from folder! -- Moved to cl_bind reload
+                --     local randompool = {}
+
+                --     for _, v in ipairs(self.BottomBarAtts) do
+                --         local atbl = ARC9.GetAttTable(v.att)
+
+                --         local checkfolder = self2.folder
+
+                --         local pathprefix = string.Implode("/", self.BottomBarPath)
+                --         if pathprefix != "" then checkfolder = pathprefix .. "/" .. self2.folder end
+
+                --         if atbl.Folder == checkfolder or (self2.folder == "!favorites" and ARC9.Favorites[v.att]) then
+                --             table.insert(randompool, atbl)
+                --             randompool[#randompool].fuckthis = v.slot
+                --         end
+                --     end
+
+                --     local thatatt = randompool[math.random(0, #randompool)]
+                --     if thatatt then
+                --         self:Attach(thatatt.fuckthis, thatatt.ShortName, true)
+                --     end
+
+                --     surface.PlaySound(tabsound)
+                -- end
+            end
+
+            folderbtn.Think = function(self2)
+                if !IsValid(self) then return end
+                if self2:IsHovered() then
+                    self.CustomizeHints["customize.hint.select"] = "customize.hint.open"
+                    self.CustomizeHints["customize.hint.random"] = "customize.hint.randomize"
+                    self.CustomizeLastHoveredFolder = self2
+                end
             end
         end
     end
@@ -206,7 +290,7 @@ local function enterfolder(self, scroll, slottbl, fname)
     local strpath = string.Implode("/", self.BottomBarPath)
 
     for _, att in pairs(self.BottomBarAtts) do
-        local qty = ARC9:PlayerGetAtts(self:GetOwner(), att.att)
+        local qty = ARC9:PlayerGetAtts(self:GetOwner(), att.att, self)
 
         local atttbl = ARC9.GetAttTable(att.att)
         local aslottbl = self:LocateSlotFromAddress(att.slot)
@@ -280,16 +364,22 @@ local function enterfolder(self, scroll, slottbl, fname)
 
             attbtn2:SetInstalled(slot.Installed == att.att)
             attbtn2:SetHasModes(!!atttbl.ToggleStats)
+            attbtn2:SetHasPaint(!!atttbl.AdvancedCamoSupport)
             attbtn2:SetHasSlots(!!atttbl.Attachments)
             attbtn2:SetCanAttach(self:CanAttach(slot.Address, att.att, slot, true))
             attbtn2:SetMissingDependents(self:GetSlotMissingDependents(slot.Address, att.att, slot))
             attbtn2:SetFullColorIcon(atttbl.FullColorIcon)
 
             if self2:IsHovered() then
-                if slot.Installed != att.att then
+                if (qty > 0) and slot.Installed != att.att then
                     self.CustomizeHints["customize.hint.select"] = "customize.hint.attach"
                 elseif self2.slottbl.Installed then
                     self.CustomizeHints["customize.hint.deselect"] = "customize.hint.unattach"
+                    if atttbl.ToggleStats and !atttbl.AdvancedCamoSupport then
+                        self.CustomizeHints["customize.hint.toggleatts"] = "hud.hint.toggleatts"
+                    elseif atttbl.ToggleStats and (atttbl.AdvancedCamoSupport and self.AdvancedCamoCache) then
+                        self.CustomizeHints["customize.hint.toggleatts"] = "hud.hint.togglecamos"
+                    end
                 end
 
                 if ARC9.Favorites[att.att] then
@@ -413,6 +503,12 @@ function SWEP:CreateHUD_Bottom()
             if ARC9.Favorites[a] then order_a = order_a - ARC9.FavoritesWeight end
             if ARC9.Favorites[b] then order_b = order_b - ARC9.FavoritesWeight end
 
+            local qty_a = ARC9:PlayerGetAtts(self:GetOwner(), a, self)
+            local qty_b = ARC9:PlayerGetAtts(self:GetOwner(), b, self)
+
+            if ( (qty_a <= 0) and (slottbl.Installed != a) ) then order_a = order_a - ARC9.UnownedWeight end
+            if ( (qty_b <= 0) and (slottbl.Installed != b) ) then order_b = order_b - ARC9.UnownedWeight end
+
             if order_a == order_b then
                 return (atttbl_a.CompactName or atttbl_a.PrintName or "") < (atttbl_b.CompactName or atttbl_b.PrintName or "")
             end
@@ -486,20 +582,27 @@ function SWEP:CreateHUD_AttInfo()
     infopanel.title = ARC9:GetPhraseForAtt(self.AttInfoBarAtt, "PrintName") or atttbl.PrintName
     infopanel.Paint = function(self2, w, h)
         if !IsValid(self) then return end
-        surface.SetFont("ARC9_10")
-        surface.SetTextPos(0, 0)
-        surface.SetTextColor(ARC9.GetHUDColor("fg"))
-        ARC9.DrawTextRot(self2, self2.title, 0, 0, ARC9ScreenScale(6), ARC9ScreenScale(3), w, true)
+        -- surface.SetFont("ARC9_10")
+        -- surface.SetTextPos(0, 0)
+        -- surface.SetTextColor(ARC9.GetHUDColor("fg"))
+        -- ARC9.DrawTextRot(self2, self2.title, 0, 0, ARC9ScreenScale(6), ARC9ScreenScale(3), w, true)
+
+        markup.Parse("<font=ARC9_10>" .. self2.title):Draw(ARC9ScreenScale(6), ARC9ScreenScale(3), TEXT_ALIGN_LEFT, TEXT_ALIGN_LEFT)
     end
 
     self.AttInfoBar = infopanel
 
     local descscroller = vgui.Create("ARC9ScrollPanel", infopanel)
-    descscroller:SetSize(lowerpanel:GetWide()/2 - ARC9ScreenScale(5), infopanel:GetTall()-ARC9ScreenScale(16))
+    descscroller:SetSize(lowerpanel:GetWide() / 2 - ARC9ScreenScale(5), infopanel:GetTall() - ARC9ScreenScale(16))
     descscroller:SetPos(ARC9ScreenScale(4), ARC9ScreenScale(14))
 
     local multiline = {}
     local desc = ARC9:GetPhraseForAtt(self.AttInfoBarAtt, "Description") or atttbl.Description
+
+    if atttbl.AdvancedCamoSupport and !self.AdvancedCamoCache then
+        desc = desc .. (ARC9:GetPhrase("customize.camoslot.nosupport") or "")
+        if self.EFTErgo then desc = desc .. (ARC9:GetPhrase("customize.camoslot.eftextra") or "") end
+    end
 
     multiline = ARC9MultiLineText(desc, descscroller:GetWide() - (ARC9ScreenScale(3.5)), "ARC9_9_Slim")
 
@@ -508,16 +611,19 @@ function SWEP:CreateHUD_AttInfo()
         desc_line:SetSize(descscroller:GetWide(), ARC9ScreenScale(9))
         desc_line:Dock(TOP)
         desc_line.Paint = function(self2, w, h)
-            surface.SetFont("ARC9_9_Slim")
-            surface.SetTextColor(ARC9.GetHUDColor("fg"))
-            surface.SetTextPos(ARC9ScreenScale(2), 0)
-            surface.DrawText(text)
+            -- surface.SetFont("ARC9_9_Slim")
+            -- surface.SetTextColor(ARC9.GetHUDColor("fg"))
+            -- surface.SetTextPos(ARC9ScreenScale(2), 0)
+            -- surface.DrawText(text)
+            markup.Parse("<font=ARC9_9_Slim>" .. text):Draw(ARC9ScreenScale(2), 0, TEXT_ALIGN_LEFT, TEXT_ALIGN_LEFT)
         end
     end
 
     local slot = self.AttInfoBarAttSlot
 
-    if slot and atttbl.ToggleStats then
+    local camotoggle = atttbl.AdvancedCamoSupport and self.AdvancedCamoCache
+
+    if slot and ((atttbl.ToggleStats and !atttbl.AdvancedCamoSupport) or camotoggle) then
         local mode_toggle = vgui.Create("ARC9TopButton", infopanel)
         mode_toggle.addr = slot.Address
         surface.SetFont("ARC9_12")
@@ -526,11 +632,11 @@ function SWEP:CreateHUD_AttInfo()
         mode_toggle:SetPos(descscroller:GetWide()/2-(ARC9ScreenScale(24)+tw)/2, ARC9ScreenScale(50))
         mode_toggle:SetSize(0, 0) -- ARC9ScreenScale(24)+tw, ARC9ScreenScale(21*0.75)
         mode_toggle:SetButtonText(curmode, "ARC9_12")
-        mode_toggle:SetIcon(Material("arc9/ui/modes.png", "mips smooth"))
+        mode_toggle:SetIcon(camotoggle and camosicon or modesicon)
         mode_toggle.DoClick = function(self2)
             -- surface.PlaySound(clicksound)
             -- self:PlayAnimation("toggle")
-            self:EmitSound(self:RandomChoice(self:GetProcessedValue("ToggleAttSound", true)), 75, 100, 1, CHAN_ITEM)
+            self:EmitSound(camotoggle and favsound or self:RandomChoice(self:GetProcessedValue("ToggleAttSound", true)), 75, 100, 1, CHAN_ITEM)
             self:ToggleStat(self2.addr)
             self:PostModify()
         end
@@ -538,24 +644,30 @@ function SWEP:CreateHUD_AttInfo()
         mode_toggle.DoRightClick = function(self2)
             -- surface.PlaySound(clicksound)
             -- self:PlayAnimation("toggle")
-            self:EmitSound(self:RandomChoice(self:GetProcessedValue("ToggleAttSound", true)), 75, 100, 1, CHAN_ITEM)
+            self:EmitSound(camotoggle and favsound or self:RandomChoice(self:GetProcessedValue("ToggleAttSound", true)), 75, 100, 1, CHAN_ITEM)
             self:ToggleStat(self2.addr, -1)
             self:PostModify()
         end
 
         mode_toggle.Think = function(self2)
             if !IsValid(self) then return end
+            if self.AdvancedCamoCache == false then self2:Remove() return end
 
             slot = self:LocateSlotFromAddress(self2.addr)
 
+            if !slot then return end
+
             if slot.Installed == self.AttInfoBarAtt then
-                curmode = atttbl.ToggleStats[slot.ToggleNum] and atttbl.ToggleStats[slot.ToggleNum].PrintName or "Toggle"
-                
+                curmode = atttbl.ToggleStats[slot.ToggleNum] and ARC9:GetPhrase(atttbl.ToggleStats[slot.ToggleNum].PrintName) or atttbl.ToggleStats[slot.ToggleNum].PrintName or "Toggle"
+
                 surface.SetFont("ARC9_12")
                 tw = surface.GetTextSize(curmode)
                 mode_toggle:SetPos(descscroller:GetWide() / 2-(ARC9ScreenScale(24) + tw) / 2, ARC9ScreenScale(50))
                 mode_toggle:SetSize(ARC9ScreenScale(21) + tw, ARC9ScreenScale(21 * 0.75))
                 mode_toggle:SetButtonText(curmode, "ARC9_12")
+                if atttbl.ToggleStats[slot.ToggleNum].ToggleIcon then
+                    mode_toggle:SetIcon(atttbl.ToggleStats[slot.ToggleNum].ToggleIcon)
+                end
             else
                 mode_toggle:SetSize(0, 0)
             end
@@ -592,7 +704,8 @@ function SWEP:CreateHUD_AttInfo()
                 surface.SetFont("ARC9_9")
                 surface.SetTextColor(ARC9.GetHUDColor("fg"))
                 surface.SetTextPos(ARC9ScreenScale(2), 0)
-                ARC9.DrawTextRot(self2, self2.text, 0, 0, ARC9ScreenScale(2), 0, w, true)
+                local tw = surface.GetTextSize(self2.text)
+                ARC9.DrawTextRot(self2, self2.text, ARC9ScreenScale(2), 0, ARC9ScreenScale(2), 0, ARC9ScreenScale(110), false)
 
                 local tw = surface.GetTextSize(prosnum[k])
                 ARC9.DrawTextRot(self2, prosnum[k], 0, 0, prosscroller:GetWide()-tw-ARC9ScreenScale(6), 0, w, true)
@@ -614,7 +727,8 @@ function SWEP:CreateHUD_AttInfo()
                 surface.SetFont("ARC9_9")
                 surface.SetTextColor(ARC9.GetHUDColor("fg"))
                 surface.SetTextPos(ARC9ScreenScale(2), 0)
-                ARC9.DrawTextRot(self2, self2.text, 0, 0, ARC9ScreenScale(2), 0, w, true)
+                local tw = surface.GetTextSize(self2.text)
+                ARC9.DrawTextRot(self2, self2.text, ARC9ScreenScale(2), 0, ARC9ScreenScale(2), 0, ARC9ScreenScale(110), false)
 
                 local tw = surface.GetTextSize(consnum[k])
                 ARC9.DrawTextRot(self2, consnum[k], 0, 0, consscroller:GetWide()-tw-ARC9ScreenScale(6), 0, w, true)

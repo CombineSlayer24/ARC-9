@@ -1,3 +1,7 @@
+
+local Lerp = Lerp
+local LerpVector = LerpVector
+
 local function qerp(delta, a, b)
     local qdelta = -(delta ^ 2) + (delta * 2)
     qdelta = math.Clamp(qdelta, 0, 1)
@@ -15,11 +19,13 @@ function SWEP:DoRHIK(wm)
     local lh_delta = 1
     local rh_delta = 1
     -- local lhik_bf_d = self:GetBlindFireAmount() - (math.abs(self:GetBlindFireCornerAmount()))
+    local hasonehandsprint = self:GetValue("OneHandedSprint")
     local hide_lh_d = 0
     local hide_rh_d = 0
     hide_lh_d = self.CustomizeDelta
+    if hasonehandsprint then hide_lh_d = hide_lh_d + self:GetSprintAmount() end
     hide_rh_d = self.CustomizeDelta
-    hide_lh_d = math.ease.InCubic(hide_lh_d)
+    hide_lh_d = math.ease.InExpo(hide_lh_d)
     hide_rh_d = math.ease.InCubic(hide_rh_d)
     if ARC9.PresetCam then
         hide_lh_d = 1
@@ -30,7 +36,7 @@ function SWEP:DoRHIK(wm)
     local iklt = math.Clamp((CurTime() - self:GetIKTimeLineStart()) / iket, 0, 1)
 
     if iktl then
-        if self:GetProcessedValue("LHIK") then
+        if self:GetProcessedValue("LHIK", true) then
             local next_stage_index
 
             for i, k in ipairs(iktl) do
@@ -71,7 +77,7 @@ function SWEP:DoRHIK(wm)
             lh_delta = qerp(delta_time, stage.lhik or 0, next_stage.lhik or 0)
         end
 
-        if self:GetProcessedValue("RHIK") then
+        if self:GetProcessedValue("RHIK", true) then
             local next_stage_index
 
             for i, k in ipairs(iktl) do
@@ -147,6 +153,8 @@ function SWEP:DoRHIK(wm)
     if IsValid(lhik_model) then
         lhik_model:SetupBones()
 
+        lh_delta = lh_delta - math.ease.OutExpo(hide_lh_d)
+
         for _, bone in ipairs(ARC9.LHIKBones) do
             local vm_bone = vm:LookupBone(bone)
             local target_bone = lhik_model:LookupBone(bone)
@@ -196,8 +204,8 @@ function SWEP:DoRHIK(wm)
         -- rarm_start = EyePos() + (EyeAngles():Right() * 4) + (EyeAngles():Up() * -8) + (EyeAngles():Forward() * -1)
         larm_start = lupperarm_matrix:GetTranslation()
         -- larm_start = EyePos() + (EyeAngles():Right() * -6) + (EyeAngles():Up() * -8) + (EyeAngles():Forward() * -1)
-        local rupperarm_position, rforearm_position = self:Solve2PartIK(rarm_start, rhand_end, rupperarm_length, rarm_length, 0)
-        local lupperarm_position, lforearm_position = self:Solve2PartIK(larm_start, lhand_end, lupperarm_length, larm_length, 0)
+        local rupperarm_position, rforearm_position = self:Solve2PartIK(rarm_start, rhand_end, rupperarm_length, rarm_length, -1, self:GetOwner():EyeAngles())
+        local lupperarm_position, lforearm_position = self:Solve2PartIK(larm_start, lhand_end, lupperarm_length, larm_length, 1, self:GetOwner():EyeAngles())
         
         debugoverlay.Line(rarm_start, rupperarm_position, 0.1, color_white, true)
         debugoverlay.Line(rforearm_position, rupperarm_position, 0.1, color_white, true)
@@ -287,7 +295,13 @@ function SWEP:DoRHIK(wm)
             local vm_pos = vmtransform:GetTranslation()
             local vm_ang = vmtransform:GetAngles()
             local newtransform = Matrix()
-            newtransform:SetTranslation(LerpVector(hide_lh_d, vm_pos, vm_pos - (EyeAngles():Up() * 48) - (EyeAngles():Forward() * 16)))
+
+            if hasonehandsprint and hide_rh_d == 0 then
+                newtransform:SetTranslation(LerpVector(hide_lh_d, vm_pos, vm_pos - (EyeAngles():Up() * 16) - (EyeAngles():Forward() * 9) - (EyeAngles():Right() * 12)))
+            else
+                newtransform:SetTranslation(LerpVector(hide_lh_d, vm_pos, vm_pos - (EyeAngles():Up() * 48) - (EyeAngles():Forward() * 16)))
+            end
+
             newtransform:SetAngles(vm_ang)
             vm:SetBoneMatrix(vmbone, newtransform)
         end
@@ -351,7 +365,7 @@ function SWEP:GunControllerRHIK(pos, ang)
 
         local anim_mdl = slottbl.GunDriverModel
 
-        if !anim_mdl then return pos, ang end
+        if !IsValid(anim_mdl) then return pos, ang end
 
         local refl_mdl = slottbl.ReflectDriverModel
 
@@ -367,7 +381,9 @@ function SWEP:GunControllerRHIK(pos, ang)
             self:RecalculateIKGunMotionOffset()
         end
 
-        local attpos, attang = anim_mdl:GetAttachment(qca).Pos, anim_mdl:GetAttachment(qca).Ang
+        local getatt = anim_mdl:GetAttachment(qca)
+        if !getatt then return pos, ang end
+        local attpos, attang = getatt.Pos, getatt.Ang
 
         attang:Sub( self.IKGunMotionOffsetAngle )
 

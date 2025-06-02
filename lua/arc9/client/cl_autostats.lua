@@ -1,7 +1,50 @@
-local hutom = function(i) return math.Round(i * ARC9.HUToM) .. (ARC9:GetPhrase("unit.meter") or "m") end
-local hutoms = function(i) return math.Round(i * ARC9.HUToM) .. (ARC9:GetPhrase("unit.meterpersecond") or "m/s") end
-local hutoms_1 = function(i) return math.Round(i * ARC9.HUToM, 1) .. (ARC9:GetPhrase("unit.meterpersecond") or "m/s") end
-local degtomoa = function(i) return math.Round(i / ARC9.MOAToAcc, 2) .. (ARC9:GetPhrase("unit.moa") or "MOA") end
+local imperial = GetConVar("arc9_imperial"):GetBool()
+
+local hutom = function(i)
+	if imperial then 
+		impv = 1.0936
+		impn = "unit.yard"
+	else 
+		impv = 1
+		impn = "unit.meter"
+	end
+	return math.Round(i * ARC9.HUToM * impv) .. (ARC9:GetPhrase(impn) or "m") 
+end
+
+local hutomm = function(i)
+	if imperial then 
+		impv = 39.370
+		impn = "unit.inch"
+	else 
+		impv = 1000
+		impn = "unit.millimeter"
+	end
+	return math.Round(i * ARC9.HUToM * impv) .. (ARC9:GetPhrase(impn) or "mm") 
+end
+
+local hutoms = function(i) 
+	if imperial then 
+		impv = 3.2808399
+		impn = "unit.footpersecond"
+	else 
+		impv = 1
+		impn = "unit.meterpersecond"
+	end
+	return math.Round(i * ARC9.HUToM * impv) .. (ARC9:GetPhrase(impn) or "m/s")
+end
+
+local hutoms_1 = function(i) 
+	if imperial then 
+		impv = 3.2808399
+		impn = "unit.footpersecond"
+	else 
+		impv = 1
+		impn = "unit.meterpersecond"
+	end
+	return math.Round(i * ARC9.HUToM * impv, 1) .. (ARC9:GetPhrase(impn) or "m/s")
+end
+
+local degtomoa = function(i) return math.Round(i / ARC9.TrueMOAToAcc, 1) .. (ARC9:GetPhrase("unit.moa") or "MOA") end
 
 -- [AutoStatName] = {unit, lower_is_better}
 -- unit can be:
@@ -17,12 +60,12 @@ ARC9.AutoStatsMains = {
     ["RangeMax"] = {hutom, false},
     ["Distance"] = {hutom, false},
     ["Num"] = {false, false},
-    ["Penetration"] = {"HU", false},
+    ["Penetration"] = {hutomm, false},
     ["PenetrationDelta"] = {true, false},
     ["RicochetAngleMax"] = {"°", false},
     ["RicochetChance"] = {false, false},
     ["ArmorPiercing"] = {false, false},
-    ["EntityMuzzleVelocity"] = {hutoms, false},
+    ["MuzzleVelocity"] = {hutoms, false},
     ["PhysBulletMuzzleVelocity"] = {hutoms, false},
     ["PhysBulletDrag"] = {false, true},
     ["PhysBulletGravity"] = {false, true},
@@ -48,7 +91,7 @@ ARC9.AutoStatsMains = {
     ["RecoilAutoControl"] = {false, false},
     ["RecoilKick"] = {false, true},
     ["Spread"] = {degtomoa, true},
-    ["PelletSpread"] = {degtomoa, true},
+    ["DispersionSpread"] = {degtomoa, true},
     ["FreeAimRadius"] = {"°", true},
     ["Sway"] = {false, true},
     ["AimDownSightsTime"] = {"s", true},
@@ -58,10 +101,13 @@ ARC9.AutoStatsMains = {
     ["CycleTime"] = {false, true},
     ["FixTime"] = {false, true},
     ["OverheatTime"] = {false, true},
-    ["Speed"] = {false, false},
+    ["Speed"] = {true, false},
     ["BashDamage"] = {false, false},
     ["BashRange"] = {"HU", false},
     ["BashLungeRange"] = {"HU", false},
+    ["Bash2Damage"] = {false, false},
+    ["Bash2Range"] = {"HU", false},
+    ["Bash2LungeRange"] = {"HU", false},
     ["HeatPerShot"] = {false, true},
     ["HeatCapacity"] = {false, false},
     ["HeatDissipation"] = {false, false},
@@ -80,6 +126,7 @@ ARC9.AutoStatsMains = {
     ["RunawayBurst"] = {false, false},
     ["ShootWhileSprint"] = {false, true},
     ["Bash"] = {false, true},
+    ["Bash2"] = {false, true},
     ["Overheat"] = {false, false},
     ["Malfunction"] = {false, false},
     ["MalfunctionWait"] = {"s", true},
@@ -89,11 +136,11 @@ ARC9.AutoStatsMains = {
     ["BulletGuidanceAmount"] = {false, false},
     ["ExplosionDamage"] = {false, false},
     ["ExplosionRadius"] = {false, false},
-    ["HeadshotDamage"] = {false, false},
-    ["ChestDamage"] = {false, false},
-    ["StomachDamage"] = {false, false},
-    ["ArmDamage"] = {false, false},
-    ["LegDamage"] = {false, false},
+    ["HeadshotDamage"] = {true, false},
+    ["ChestDamage"] = {true, false},
+    ["StomachDamage"] = {true, false},
+    ["ArmDamage"] = {true, false},
+    ["LegDamage"] = {true, false},
     ["VisualRecoil"] = {false, true},
     ["VisualRecoilUp"] = {false, true},
     ["VisualRecoilSide"] = {false, true},
@@ -102,6 +149,11 @@ ARC9.AutoStatsMains = {
     ["BreathHoldTime"] = {false, false},
     ["RecoilModifierCap"] = {false, true},
     ["BashSpeed"] = {false, false},
+    ["Bash2Speed"] = {false, false},
+    ["RecoilPerShot"] = {false, true},
+    ["ImpactForce"] = {false, false},
+    ["RicochetSeeking"] = {false, true},
+    ["RicochetSeekingAngle"] = {false, false},
 }
 
 ARC9.AutoStatsOperations = {
@@ -136,11 +188,11 @@ ARC9.AutoStatsOperations = {
         if unit == true then
             str = math.Round(a * 100, 2) .. "%"
         elseif isstring(unit) then
-            str = tostring(a) .. unit
+            str = tostring(math.Round(a, 2)) .. unit
         elseif isfunction(unit) then
             str = unit(a)
         else
-            str = tostring(a)
+            str = tostring(math.Round(a, 2))
         end
 
         if neg then
@@ -162,11 +214,11 @@ ARC9.AutoStatsOperations = {
         if unit == true then
             str = math.Round(a * 100, 2) .. "%"
         elseif isstring(unit) then
-            str = tostring(a) .. unit
+            str = tostring(math.Round(a, 2)) .. unit
         elseif isfunction(unit) then
             str = unit(a)
         else
-            str = tostring(a)
+            str = tostring(math.Round(a, 2))
         end
 
         return str, "", a <= (weapon[stat] or 0)
@@ -201,6 +253,7 @@ ARC9.AutoStatsConditions = {
     ["BlindFire"] = "While Blind Firing",
     ["UBGL"] = "In UBGL",
     ["Bipod"] = "On Bipod",
+	["Sprint"] = "when Sprinting",
 }
 
 function ARC9.GetProsAndCons(atttbl, weapon)
@@ -209,9 +262,9 @@ function ARC9.GetProsAndCons(atttbl, weapon)
     local consname = {}
     local consnum = {}
 
-    for stat, value in pairs(atttbl) do
+    for stat, value in SortedPairs(atttbl) do
         if !isnumber(value) and !isbool(value) then continue end
-        if isnumber(value) and (stat != "Spread" and stat != "SpreadOverride") then value = math.Round(value, 2) end
+        --if isnumber(value) and (!string.StartWith(stat, "Spread")) then value = math.Round(value, 2) end
         local autostat = ""
         local autostatnum = ""
         local canautostat = false
@@ -273,19 +326,10 @@ function ARC9.GetProsAndCons(atttbl, weapon)
         if stat == "_Priority" then continue end
 
         if string.len(stat) > 0 then
-
-            local before = ARC9:GetPhrase("autostat.secondary._beforephrase")
-            local div = ARC9:GetPhrase("autostat.secondary._divider")
-            if div == true then div = "" end
-
             for cond, postfix in pairs(ARC9.AutoStatsConditions) do
                 if string.StartWith(stat, cond) then
-                    local phrase = (ARC9:GetPhrase("autostat.secondary." .. string.lower(cond)) or "")
-                    if before then
-                        autostat = phrase .. div .. autostat
-                    else
-                        autostat = autostat .. div .. phrase
-                    end
+                    local phrase = (ARC9:GetPhrase("autostat.secondary." .. string.lower(cond)) or "%s")
+						autostat = string.format(phrase, autostat)
                     break
                 end
             end
@@ -303,15 +347,15 @@ function ARC9.GetProsAndCons(atttbl, weapon)
     -- custom stats
     if istable(atttbl.CustomPros) then
         for stat, value in pairs(atttbl.CustomPros) do
-            table.insert(prosname, stat)
-            table.insert(prosnum, value)
+            table.insert(prosname, ARC9:GetPhrase(stat) or stat)
+            table.insert(prosnum, ARC9:GetPhrase(value) or value)
         end
     end
 
     if istable(atttbl.CustomCons) then
         for stat, value in pairs(atttbl.CustomCons) do
-            table.insert(consname, stat)
-            table.insert(consnum, value)
+            table.insert(consname, ARC9:GetPhrase(stat) or stat)
+            table.insert(consnum, ARC9:GetPhrase(value) or value)
         end
     end
 

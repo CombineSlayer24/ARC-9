@@ -7,9 +7,29 @@ ARC9.Attachments_Bits = 16
 
 ARC9.ModelToPrecacheList = {}
 
+local fullreload
+
 local defaulticon = Material("arc9/logo/logo_lowvis.png", "mips smooth")
+local maxcamos = GetConVar("arc9_atts_maxcamos")
+
+local function FixVertexLitMaterial(mat) -- from DImage code
+	if string.find(mat:GetShader(), "VertexLitGeneric") then
+		local t = mat:GetString( "$basetexture" )
+		if t then
+			local params = {}
+			params[ "$basetexture" ] = t
+			params[ "$vertexcolor" ] = 1
+			params[ "$vertexalpha" ] = 1
+
+			mat = CreateMaterial( mat:GetName() .. "_Icon", "UnlitGeneric", params )
+		end
+	end
+
+	return mat
+end
 
 function ARC9.LoadAttachment(atttbl, shortname, id)
+    if hook.Run("ARC9_LoadAttachment", atttbl, shortname, id) then return end
     if atttbl.Ignore then return end
     shortname = shortname or "default"
 
@@ -21,6 +41,10 @@ function ARC9.LoadAttachment(atttbl, shortname, id)
     atttbl.ID = id or ARC9.Attachments_Count
     atttbl.Icon = atttbl.Icon or defaulticon
 
+    -- only checking stickers and camos cuz rest of icons are usually normal and use png
+    -- parsing all thousands of icons of atts might technically take more time otherwise
+    if CLIENT and (atttbl.StickerMaterial or atttbl.CustomCamoTexture) then atttbl.Icon = FixVertexLitMaterial(atttbl.Icon) end
+
     -- for stat, val in ipairs(atttbl) do
     --     local stat2 = string.Replace(stat, "Override", "")
     --     atttbl[stat2] = val
@@ -30,14 +54,29 @@ function ARC9.LoadAttachment(atttbl, shortname, id)
         table.insert(ARC9.ModelToPrecacheList, atttbl.Model)
     end
 
+    if atttbl.AdvancedCamoSupport then
+        local camotoggles = {}
+        local maxcamos = maxcamos:GetInt() + 1
+
+        for i = 1, maxcamos do
+            local printtnamee = i == maxcamos and ARC9:GetPhrase("customize.camoslot.none") or string.format( ARC9:GetPhrase("customize.camoslot"), i)
+            table.insert(camotoggles, {
+				PrintName = printtnamee,
+				[(isstring(atttbl.AdvancedCamoSupport) and atttbl.AdvancedCamoSupport or shortname) .. "_camoslot"] = i
+            })
+        end
+
+        atttbl.ToggleStats = camotoggles
+    end
+
     ARC9.Attachments[shortname] = atttbl
     ARC9.Attachments_Index[atttbl.ID] = shortname
 
-    if GetConVar("arc9_atts_generateentities"):GetBool() and !atttbl.DoNotRegister and !atttbl.InvAtt and !atttbl.Free then
+    if GetConVar("arc9_atts_generate_entities"):GetBool() and !atttbl.DoNotRegister and !atttbl.InvAtt and !atttbl.Free then
         local attent = {}
         attent.Base = "arc9_att_base"
         attent.Icon = atttbl.Icon or defaulticon
-        if attent.Icon then
+        if CLIENT and attent.Icon then
             attent.IconOverride = string.Replace( attent.Icon:GetTexture( "$basetexture" ):GetName() .. ".png", "0001010", "" )
         end
         attent.PrintName = atttbl.PrintName or shortname
@@ -50,11 +89,28 @@ function ARC9.LoadAttachment(atttbl, shortname, id)
         }
         attent.Category =  atttbl.MenuCategory or "ARC9 - Attachments"
 
+        if atttbl.MenuCategory and !list.HasEntry("ContentCategoryIcons", atttbl.MenuCategory) then
+            list.Set("ContentCategoryIcons", atttbl.MenuCategory, "arc9/icon_16.png")
+        end
+
         scripted_ents.Register(attent, "arc9_att_" .. shortname)
+    end
+
+    if !fullreload then -- not full loading means individual att file was updated. thats a dev! recaching gun for him so he dont have to reattach attahment!
+        if game.SinglePlayer() then
+            if IsValid(Entity(1)) then
+                local wep = Entity(1):GetActiveWeapon()
+
+                if IsValid(wep) and wep.ARC9 then
+                    timer.Simple(0, function() wep:PostModify(true) end)
+                end
+            end
+        end
     end
 end
 
 function ARC9.LoadAtts()
+    fullreload = true
     ARC9.Attachments_Count = 0
     local Attachments_BulkCount = 0
     local Attachments_RegularCount = 0
@@ -62,19 +118,15 @@ function ARC9.LoadAtts()
     ARC9.Attachments = {}
     ARC9.Attachments_Index = {}
 
-    local searchdir = "ARC9/common/attachments/"
-    local searchdir_bulk = "ARC9/common/attachments_bulk/"
+    local searchdir = "arc9/common/attachments/"
+    local searchdir_bulk = "arc9/common/attachments_bulk/"
 
-    local files = file.Find(searchdir .. "/*.lua", "LUA")
-
-    for _, filename in pairs(files) do
-        AddCSLuaFile(searchdir .. filename)
-    end
-
-    files = file.Find(searchdir .. "/*.lua", "LUA")
+    local files = file.Find(searchdir .. "*.lua", "LUA")
 
     for _, filename in pairs(files) do
         if filename == "default.lua" then continue end
+        
+        AddCSLuaFile(searchdir .. filename)
 
         local shortname = string.lower(string.sub(filename, 1, -5))
         if string.match(shortname, "[^%w_]") then
@@ -86,30 +138,11 @@ function ARC9.LoadAtts()
         ARC9.Attachments_Count = ARC9.Attachments_Count + 1
         local attid = ARC9.Attachments_Count
 
-        -- include(searchdir .. filename)
+        ATT = {}
 
-        if game.SinglePlayer() then
-            file.AsyncRead(searchdir .. filename, "LUA", function(fileName, gamePath, status, data)
-                ATT = {}
+        include(searchdir .. filename)
 
-                local thrownerror = RunString(data, "ARC9AsyncLoad", true)
-
-                if table.Count(ATT) == 0 then
-                    print("ARC9: Error loading attachment " .. shortname .. "!")
-                elseif thrownerror then
-                    print("ARC9: Error loading attachment " .. shortname .. "!")
-                    print(thrownerror)
-                else
-                    ARC9.LoadAttachment(ATT, shortname, attid)
-                end
-            end)
-        else
-            ATT = {}
-
-            include(searchdir .. filename)
-
-            ARC9.LoadAttachment(ATT, shortname, attid)
-        end
+        ARC9.LoadAttachment(ATT, shortname, attid)
     end
 
     Attachments_RegularCount = Attachments_LuaCount
@@ -117,17 +150,13 @@ function ARC9.LoadAtts()
     local bulkfiles = file.Find(searchdir_bulk .. "/*.lua", "LUA")
 
     for _, filename in pairs(bulkfiles) do
-        AddCSLuaFile(searchdir_bulk .. filename)
-        
-        Attachments_LuaCount = Attachments_LuaCount + 1
-        Attachments_BulkCount = Attachments_BulkCount + 1
-    end
-
-    bulkfiles = file.Find(searchdir_bulk .. "/*.lua", "LUA")
-
-    for _, filename in pairs(bulkfiles) do
         if filename == "default.lua" then continue end
 
+        AddCSLuaFile(searchdir_bulk .. filename)
+
+        Attachments_LuaCount = Attachments_LuaCount + 1
+        Attachments_BulkCount = Attachments_BulkCount + 1
+        
         include(searchdir_bulk .. filename)
     end
 
@@ -143,6 +172,14 @@ function ARC9.LoadAtts()
                 timer.Simple(0, function() wep:PostModify(true) end)
             end
         end
+    end
+
+    fullreload = nil
+    
+    if SERVER then
+        net.Start("arc9_svattcount")
+        net.WriteUInt(#ARC9.Attachments_Index, 16)
+        net.Broadcast()
     end
 end
 
@@ -171,6 +208,12 @@ function ARC9.GetAttsForCats(cats)
     for i, k in pairs(ARC9.Attachments) do
         if ARC9.Blacklist[k] then continue end
         local attcats = k.Category
+
+        if attcats == "*" then
+            table.insert(atts, k.ShortName)
+            continue
+        end
+
         if !istable(attcats) then
             attcats = {attcats}
         end

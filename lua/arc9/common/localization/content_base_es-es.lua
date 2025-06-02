@@ -1,12 +1,13 @@
 L = {}
 
--- Folders
+//////// Folders
 L["folder.arc9"] = "ARC9"
-L["folder.arc9.community"] = "Community"
+L["folder.arc9.community"] = "ARC9/Community"
+L["folder.arc9.dovesinternational"] = "ARC9/Doves International"
 
 L["attachment.sticker"] = "Sticker"
 
--- Flat Camo
+//////// Flat Camo
 L["camo_arc9_base_flat_od.printname"] = "Verde Oliva"
 L["camo_arc9_base_flat_od.compactname"] = "VO"
 L["camo_arc9_base_flat_od.description"] = "Camuflaje Verde Oliva estándar."
@@ -43,7 +44,7 @@ L["camo_arc9_base_flat_fde.printname"] = "Tierra Oscura Plana"
 L["camo_arc9_base_flat_fde.compactname"] = "TOP"
 L["camo_arc9_base_flat_fde.description"] = "Camuflaje estándar Tierra Oscura Plana."
 
--- Flat Colour
+//////// Flat Colour
 L["camo_arc9_base_flat_red.printname"] = "Rojo"
 L["camo_arc9_base_flat_red.compactname"] = "Rojo"
 L["camo_arc9_base_flat_red.description"] = "Color rojo básico."
@@ -76,7 +77,7 @@ L["camo_arc9_base_flat_arc9orange.printname"] = "Naranja ARC9"
 L["camo_arc9_base_flat_arc9orange.compactname"] = "Naranja ARC9"
 L["camo_arc9_base_flat_arc9orange.description"] = "El tono de naranja perfecto para esa bonita pegatina con el logotipo ARC9."
 
--- Charms
+//////// Charms
 L["charm_gs_killcounter.printname"] = "Contador de muertes"
 L["charm_gs_killcounter.compactname"] = "KILL"
 L["charm_gs_killcounter.description"] = "Dispositivo para seguir las estadísticas de muerte de tu arma."
@@ -89,7 +90,7 @@ L["charm_gs_sticker.printname"] = "Panel de pegatinas"
 L["charm_gs_sticker.compactname"] = "PEGATINA"
 L["charm_gs_sticker.description"] = "Dispositivo que permite aplicar una pegatina personalizada en su pantalla."
 
--- Stickers, Base
+//////// Stickers, Base
 L["sticker_spray.printname"] = "Spray de Jugador"
 L["sticker_spray.compactname"] = "Spray"
 L["sticker_spray.description"] = [[¡Tu propio spray como pegatina!
@@ -130,7 +131,7 @@ Diseño de Darsu.
 
 Pegatina incluida en la base ARC9.]]
 
--- Stickers, Com. Wave 1
+//////// Stickers, Com. Wave 1
 L["sticker_alien_lean.printname"] = "Legalizar Magro Alien"
 L["sticker_alien_lean.compactname"] = "Magro Alien"
 L["sticker_alien_lean.description"] = [[Baja a Agartha con los chicos blancos para tomar una taza de magro alienígena y... otras cosas.
@@ -275,5 +276,174 @@ L["sticker_arcbird.printname"] = "Pajaro Arc"
 L["sticker_arcbird.compactname"] = "Pajaro Arc"
 L["sticker_arcbird.description"] = [[Pajaro Arc.
 Diseño de Nori/Chewable.
+
+Pegatina incluida en la base ARC9.]]
+
+//////// Stickers, International
+L["sticker_dovesinternational_arc9.printname"] = "Doves International - ARC9"
+L["sticker_dovesinternational_arc9.compactname"] = "DI ARC9"
+L["sticker_dovesinternational_arc9.description"] = [[Doves International logo in the ARC9 color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_arctic.printname"] = "Doves International - Arctic"
+L["sticker_dovesinternational_arctic.compactname"] = "DI Arctic"
+L["sticker_dovesinternational_arctic.description"] = [[Doves International logo in an arctic white color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_black.printname"] = "Doves International - Black"
+L["sticker_dovesinternational_black.compactname"] = "DI Black"
+L["sticker_dovesinternational_black.description"] = [[Doves International logo in a black color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_blackblue.printname"] = "Doves International - Black & Blue"
+L["sticker_dovesinternational_blackblue.compactname"] = "DI Bla. & Blu."
+L["sticker_dovesinternational_blackblue.description"] = [[Doves International logo in a black & blue color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_blackgreen.printname"] = "Doves International - Black & Green"
+L["sticker_dovesinternational_blackgreen.compactname"] = "DI Bla. & Gre."
+L["sticker_dovesinternational_blackgreen.description"] = [[Doves International logo in a black & green color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_blacktan.printname"] = "Doves International - Black & Tan"
+L["sticker_dovesinternational_blacktan.compactname"] = "DI Bla. & Tan"
+L["sticker_dovesinternational_blacktan.description"] = [[Doves International logo in a black & tan color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_blacktrans.printname"] = "Doves International - Transparent Black"
+L["sticker_dovesinternational_blacktrans.compactname"] = "DI T. Black"
+L["sticker_dovesinternational_blacktrans.description"] = [[Doves International logo in a transparent, monochromatic black color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_blue.printname"] = "Doves International - Blue"
+L["sticker_dovesinternational_blue.compactname"] = "DI Blue"
+L["sticker_dovesinternational_blue.description"] = [[Doves International logo in a blue color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_bronze.printname"] = "Doves International - Bronze"
+L["sticker_dovesinternational_bronze.compactname"] = "DI Bronze"
+L["sticker_dovesinternational_bronze.description"] = [[Doves International logo in a bronze color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_dovesinternational.printname"] = "Doves International"
+L["sticker_dovesinternational_dovesinternational.compactname"] = "DI"
+L["sticker_dovesinternational_dovesinternational.description"] = [[Doves International logo in its default color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_error.printname"] = "Doves International - ERROR"
+L["sticker_dovesinternational_error.compactname"] = "DI ERROR"
+L["sticker_dovesinternational_error.description"] = [[Doves International logo in a missing textures color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_fox.printname"] = "Doves International - FOXHOUND"
+L["sticker_dovesinternational_fox.compactname"] = "DI FOXHOUND"
+L["sticker_dovesinternational_fox.description"] = [[Doves International logo in a color scheme resembling a certain special forces unit.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_fullcolor.printname"] = "Doves International - Full Color"
+L["sticker_dovesinternational_fullcolor.compactname"] = "DI Full Col."
+L["sticker_dovesinternational_fullcolor.description"] = [[Doves International logo in full color.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_green.printname"] = "Doves International - Green"
+L["sticker_dovesinternational_green.compactname"] = "DI Green"
+L["sticker_dovesinternational_green.description"] = [[Doves International logo in a green color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_grey.printname"] = "Doves International - Grey"
+L["sticker_dovesinternational_grey.compactname"] = "DI Grey"
+L["sticker_dovesinternational_grey.description"] = [[Doves International logo in a grey color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_monochrome.printname"] = "Doves International - Monochrome"
+L["sticker_dovesinternational_monochrome.compactname"] = "DI Mono."
+L["sticker_dovesinternational_monochrome.description"] = [[Doves International logo in a monochrome black & white color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_navytan.printname"] = "Doves International - Navy & Tan"
+L["sticker_dovesinternational_navytan.compactname"] = "DI Navy & Tan"
+L["sticker_dovesinternational_navytan.description"] = [[Doves International logo in a navy blue & tan color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_pink.printname"] = "Doves International - Pink"
+L["sticker_dovesinternational_pink.compactname"] = "DI Pink"
+L["sticker_dovesinternational_pink.description"] = [[Doves International logo in a pink color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_purple.printname"] = "Doves International - Purple"
+L["sticker_dovesinternational_purple.compactname"] = "DI Purple"
+L["sticker_dovesinternational_purple.description"] = [[Doves International logo in a purple color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_tan.printname"] = "Doves International - Tan"
+L["sticker_dovesinternational_tan.compactname"] = "DI Tan"
+L["sticker_dovesinternational_tan.description"] = [[Doves International logo in a tan color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_teal.printname"] = "Doves International - Teal & Purple"
+L["sticker_dovesinternational_teal.compactname"] = "DI Teal & Pur."
+L["sticker_dovesinternational_teal.description"] = [[Doves International logo in a teal & purple color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_trans.printname"] = "Doves International - Trans Pride"
+L["sticker_dovesinternational_trans.compactname"] = "DI Trans."
+L["sticker_dovesinternational_trans.description"] = [[Doves International logo in a color scheme resembling the Transgender Pride Flag.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_white.printname"] = "Doves International - White"
+L["sticker_dovesinternational_white.compactname"] = "DI White"
+L["sticker_dovesinternational_white.description"] = [[Doves International logo in a white color scheme.
+Diseño de M541/Neosun.
+
+Pegatina incluida en la base ARC9.]]
+
+L["sticker_dovesinternational_whitetrans.printname"] = "Doves International - Transparent White"
+L["sticker_dovesinternational_whitetrans.compactname"] = "DI T. White"
+L["sticker_dovesinternational_whitetrans.description"] = [[Doves International logo in a transparent, monochromatic white color scheme.
+Diseño de M541/Neosun.
 
 Pegatina incluida en la base ARC9.]]

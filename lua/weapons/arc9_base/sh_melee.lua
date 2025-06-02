@@ -5,10 +5,14 @@ local vmaxs, vmins = Vector(2, 2, 2), Vector(-2, -2, -2)
 
 function SWEP:MeleeAttack(bypass, bash2)
     if !bypass then
-        if self:StillWaiting() then return end
+		if !self:GetProcessedValue("BashCancelsReload", true) and self:StillWaiting() then return end
         if !self:GetProcessedValue("BashWhileSprint", true) and self:SprintLock() then return end
     end
 
+    if self:RunHook("HookP_BlockFire") then return end
+    
+	self:CancelReload()
+	
     self:CallOnClient("CallNonTPIKAnim", "AnimMelee")
 
     local soundtab1 = {
@@ -43,9 +47,11 @@ function SWEP:MeleeAttack(bypass, bash2)
         if tr.Entity:IsPlayer() or tr.Entity:IsNPC() or tr.Entity:IsNextBot() then
             self:SetLungeEntity(tr.Entity)
 
-            local dot = owner:EyeAngles():Forward():Dot(tr.Entity:EyeAngles():Forward())
+			if self:GetProcessedValue("Backstab", true) then
+            	local dot = owner:EyeAngles():Forward():Dot(tr.Entity:EyeAngles():Forward())
 
-            backstab = dot > 0
+            	backstab = dot > 0
+			end
         end
     end
 
@@ -88,6 +94,9 @@ function SWEP:MeleeAttack(bypass, bash2)
     else
         self:MeleeAttackShoot(bash2, true)
     end
+
+	self.RecentMelee = true
+
 end
 
 local vmaxs2, vmins2 = Vector(2, 2, 2), Vector(-2, -2, -2)
@@ -156,7 +165,7 @@ function SWEP:MeleeAttackShoot(bash2, backstab)
 
             util.Decal(self:GetProcessedValue(prefix .. "Decal"), tr.HitPos + (tr.HitNormal * 8), tr.HitPos - (tr.HitNormal * 8), owner)
 
-            if IsFirstTimePredicted() then
+            if self:GetProcessedValue(prefix .. "Impact") and IsFirstTimePredicted() then
                 local fx = EffectData()
                 fx:SetStart(tr.StartPos)
                 fx:SetOrigin(tr.HitPos)
@@ -175,7 +184,7 @@ function SWEP:MeleeAttackShoot(bash2, backstab)
             local dmg = DamageInfo()
 
             dmg:SetDamage(self:GetProcessedValue(prefix .. "Damage"))
-            dmg:SetDamageForce(owner:GetAimVector() * 6000)
+            dmg:SetDamageForce(owner:GetAimVector() * 16000)
             dmg:SetDamagePosition(tr.HitPos)
             dmg:SetDamageType(self:GetProcessedValue(prefix .. "DamageType"))
             dmg:SetAttacker(owner)
@@ -193,29 +202,57 @@ function SWEP:MeleeAttackShoot(bash2, backstab)
     self:SetLungeEntity(NULL)
 end
 
+local PlayerKeyDown = FindMetaTable("Player").KeyDown
+
 function SWEP:ThinkMelee()
-    local owner = self:GetOwner()
+	-- if self:StillWaiting() then return end
+	local owner = self:GetOwner()
+	local m1 = PlayerKeyDown(owner, IN_ATTACK)
+	local m2 = PlayerKeyDown(owner, IN_ATTACK2)
+	local marc = owner:KeyPressed(ARC9.IN_MELEE)
+    
+    if !(m1 or m2 or marc) and !self:GetInMeleeAttack() then return end
 
-    if !self:GetGrenadePrimed() then
+    if !self.ShootWhileSprint and self:GetIsSprinting() then return end
 
-        if owner:KeyDown(IN_ATTACK) and self:GetProcessedValue("PrimaryBash", true) then
-            self:MeleeAttack()
-        end
+    local bashsped = self:GetProcessedValue("BashSpeed", true)
 
-        if owner:KeyDown(IN_ATTACK2) and self:GetProcessedValue("SecondaryBash", true) then
-            self:MeleeAttack(false, true)
-        end
+    local prebash = self:GetProcessedValue("PreBashTime", true) / bashsped
+	local b2 = false
 
-        if owner:KeyDown(ARC9.IN_MELEE) and self:GetProcessedValue("Bash", true) and !self:GetInSights() then
-            self:MeleeAttack()
-        end
-
+    if self:GetBash2() and self:GetProcessedValue("SecondaryBash", true) then
+        prebash = self:GetProcessedValue("PreBash2Time", true) / bashsped
     end
 
-    local prebash = self:GetProcessedValue("PreBashTime") / self:GetProcessedValue("BashSpeed")
+    if !self:GetGrenadePrimed() then
+		if m2 then b2 = true else b2 = false end
+		
+		waituntilbashagain = self:GetLastMeleeTime() + prebash + self:GetProcessedValue("PostBashTime", true) <= CurTime()
+		
+        if self:GetProcessedValue("PrimaryBash", true) and m1 and waituntilbashagain then
+			if self:GetSafe() then
+				self:ToggleSafety(false)
+			else
+				self:MeleeAttack(nil, b2)
+			end
+        end
 
-    if self:GetBash2() then
-        prebash = self:GetProcessedValue("PreBash2Time")
+        if self:GetProcessedValue("SecondaryBash", true) and m2 and waituntilbashagain then
+            if self:GetSafe() then
+				self:ToggleSafety(false)
+			else
+				self:MeleeAttack(nil, b2)
+			end
+        end
+
+        if self:GetProcessedValue("Bash", true) and marc and !self:GetInSights() and waituntilbashagain then
+            if self:GetSafe() then
+				self:ToggleSafety(false)
+			else
+				self:MeleeAttack()
+			end
+        end
+
     end
 
     if self:GetInMeleeAttack() and self:GetLastMeleeTime() + prebash <= CurTime() then

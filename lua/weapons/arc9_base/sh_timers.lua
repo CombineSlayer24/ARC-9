@@ -72,7 +72,6 @@ SWEP.SoundTablePoseParams = {}
 function SWEP:PlaySoundTable(soundtable, mult)
     if !IsFirstTimePredicted() then return end
     local owner = self:GetOwner()
-    start = start or 0
     mult = mult
 
     self:KillSoundTable()
@@ -89,7 +88,7 @@ function SWEP:PlaySoundTable(soundtable, mult)
         if ttime < 0 then continue end
         if !(IsValid(self) and IsValid(owner)) then continue end
 
-        self:SetTimer(ttime, function()
+        local thatfunc = function()
             if v.s then
                 local soundtab = {
                     name = "soundtable",
@@ -105,10 +104,6 @@ function SWEP:PlaySoundTable(soundtable, mult)
                 self:PlayTranslatedSound(soundtab)
             end
 
-            if v.pp then
-                self.PoseParamState[v.pp] = v.ppv
-            end
-
             if v.ind then
                 self.SoundTableBodygroups[v.ind] = v.bg or nil
             end
@@ -119,6 +114,10 @@ function SWEP:PlaySoundTable(soundtable, mult)
 
                 if isnumber(v.shelleject) then
                     index = v.shelleject
+
+                    if index > 1000 then
+                        index = self:Clip1() >= (index - 1000) and 1 or 0
+                    end
                 elseif istable(v.shelleject) then
                     index = v.shelleject.index
                     if v.shelleject.upto then
@@ -146,6 +145,10 @@ function SWEP:PlaySoundTable(soundtable, mult)
                 self:SetHideBoneIndex(v.hide)
             end
 
+            if v.ppi != nil then
+                self:SetPoseParameterIndex(v.ppi)
+            end
+
             if game.SinglePlayer() and SERVER then
                 if (v.v1 or v.v2 or v.vt) then
                     net.Start("ARC9_AnimRumble")
@@ -157,7 +160,13 @@ function SWEP:PlaySoundTable(soundtable, mult)
             elseif !game.SinglePlayer() and CLIENT then
                 SInputAnimRumble(v.v1 or 0, v.v2 or 0, v.vt or 0.1)
             end
-        end, "soundtable_" .. tostring(i))
+        end
+    
+        if ttime <= 0 and v.s then
+            thatfunc()
+        else
+            self:SetTimer(ttime, thatfunc, "soundtable_" .. tostring(i))
+        end
     end
 end
 

@@ -16,7 +16,7 @@ ATT.CustomCons = {
 }
 
 ATT.InstallSound = nil -- sounds for installing and uninstalling the attachment respectively
-ATT.UninstallSound = nil 
+ATT.UninstallSound = nil
 
 ATT.AdminOnly = false
 ATT.Free = false
@@ -42,6 +42,7 @@ ATT.CharmAngle = Angle(0, 0, 0)
 ATT.CharmMaterial = nil
 ATT.CharmBodygroups = ""
 ATT.CharmScale = 1
+ATT.CharmSkin = 0
 
 ATT.Scale = 1
 ATT.ModelOffset = Vector(0, 0, 0)
@@ -51,17 +52,51 @@ ATT.ModelSkin = 0
 ATT.ModelBodygroups = ""
 ATT.ModelMaterial = ""
 ATT.NoDraw = false
+ATT.TranslucentPass = false -- if that model has $translucent 1 in vmt, will be drawn behind c_hands otherwise
 
-ATT.Material = ""
+ATT.Material = "material/path"
+
+-- Use SubMaterial0 through SubMaterial31 to set submaterials
+ATT.SubMaterial0 = "material/path"
 
 ATT.InvAtt = "" -- Having this other attachment will grant access to this one.
 
 ATT.Category = "" -- can be "string" or {"list", "of", "strings"}
+-- Set to "*" (exactly) to make this attachment available for all slots
 
 ATT.Folder = "" -- a string separated by slashes (/), e.g. "my/folder/hierarchy"
 -- to give a folder a name, add a localization string "folder.FOLDERNAME"
 
 ATT.ActivateElements = {"plum_stock"}
+
+-- Does precisely the same thing AttachmentElements do
+-- Use ONLY for weapon-specific attachments. These don't get modified in any way shape or form
+-- Oh, and just... try not to use this if you can, okay? Consider this a port of last resort.
+ATT.Element = {
+    --[[]
+    Bodygroups = {
+        {1, 1}
+    },
+    AttPosMods = {
+        [1] = { -- slot index
+            Pos = Vector(),
+            Ang = Angle(),
+        }
+    }
+    Models = {
+        Model = "",
+        Pos = Vector(),
+        Ang = Angle(),
+        Bone = "",
+        BoneMerge = false,
+        Skin = 0,
+        Bodygroups = "000",
+        Scale = 1,
+        ScaleVector = Vector(),
+    }
+    -- Other attachment parameters work here
+    ]]
+}
 
 ATT.ToggleOnF = false -- This attachment is toggleable with the flashlight key.
 ATT.ToggleStats = {
@@ -133,8 +168,7 @@ ATT.FLIRHotFunc = function(swep, ent) end -- return true for hot and false for c
 
 ATT.RTScope = true
 ATT.RTScopeSubmatIndex = 1
-ATT.RTScopeFOV = 2.5
-ATT.RTScopeRes = 512
+-- ATT.RTScopeFOV = 2.5 -- Do not use this anymore!!! use RTScopeMagnification
 ATT.RTScopeReticle = Material("")
 ATT.RTScopeReticleScale = 1
 ATT.RTScopeShadowIntensity = 1.5
@@ -150,7 +184,8 @@ ATT.RTScopeDrawFunc = function(swep, rtsize) end
 -- Extra post processing like DrawMotionBlur() DrawSharpen() DrawBloom()
 ATT.RTScopeCustomPPFunc = function(swep) end
 
-ATT.ScopeScreenRatio = 0.75 -- Needed for Cheap Scopes
+ATT.ScopeScreenRatio = 0.5 -- Take a screenshot of full screen, select whole visible picture in it and divide by screen height (for example = 500/1080, you can just leave it like that here)
+ATT.RTScopeMagnification = 4 -- New zoom thing, 1 is 1x, 4 is 4x (crazy!)
 
 ATT.RTScopeNightVision = true
 ATT.RTScopeNightVisionMonochrome = true
@@ -201,6 +236,11 @@ ATT.RTScopePostInvertFunc = function(swep) end -- only when InvertColors is true
 
 ATT.RTScopeMotionBlur = false
 
+ATT.RTScopeAdjustable = false -- adjustable scope settings
+ATT.RTScopeAdjustmentLevels = 4
+ATT.RTScopeFOVMin = 10
+ATT.RTScopeFOVMax = 2.5
+
 ATT.Attachments = {
     {
         PrintName = "",
@@ -238,4 +278,5 @@ ATT.IKGunMotionQCA = nil -- Make the gun move while in IK animation
 ATT.IKGunMotionMult = 1
 
 ATT.IKCameraMotionQCA = nil
+ATT.IKCameraMotionQCA_Mult = nil
 ATT.IKCameraMotionOffsetAngle = Angle(0, 0, 0)

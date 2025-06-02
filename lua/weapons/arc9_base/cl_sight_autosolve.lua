@@ -31,7 +31,8 @@ function SWEP:GenerateAutoSight(sight, slottbl)
         -- ExtraAng = ang
         ShadowPos = sight.ShadowPos,
         Reticle = sight.Reticle,
-        RTScopeFOV = sight.RTScopeFOV
+        RTScopeFOV = sight.RTScopeFOV,
+        RTScopeMagnification = sight.RTScopeMagnification
     }
 end
 
@@ -54,6 +55,26 @@ local arc9_cheapscopes = GetConVar("arc9_cheapscopes")
 local arc9_compensate_sens = GetConVar("arc9_compensate_sens")
 local fov_desired = GetConVar("fov_desired")
 
+function SWEP:GetRealZoom(sight)
+    local atttbl
+    
+    if sight.BaseSight then
+        atttbl = self:GetTable()
+    else
+        atttbl = self:GetFinalAttTable(sight.slottbl)
+    end
+
+    local scrolllevel = sight.ScrollLevel or 0
+
+    if atttbl.RTScopeAdjustable then
+        sight.SmoothScrollLevel = Lerp(FrameTime() * 12, (sight.SmoothScrollLevel or sight.ScrollLevel or 0), math.ease.InOutQuad(scrolllevel))
+        return atttbl.RTScopeMagnificationMin and Lerp(sight.SmoothScrollLevel, atttbl.RTScopeMagnificationMax, atttbl.RTScopeMagnificationMin) or (sight.ViewModelFOV or 54) / Lerp(sight.SmoothScrollLevel, atttbl.RTScopeFOVMax, atttbl.RTScopeFOVMin)
+    else
+        -- pseudo fake zoom if no real new thing defined
+        return sight.RTScopeMagnification or atttbl.RTScopeMagnification or (sight.ViewModelFOV or 54) / (sight.RTScopeFOV or atttbl.RTScopeFOV)
+    end
+end
+
 function SWEP:GetMagnification()
     local sight = self:GetSight()
 
@@ -67,46 +88,68 @@ function SWEP:GetMagnification()
         end
 
         if atttbl and atttbl.RTScope and !atttbl.RTCollimator then
-            -- target = (self:GetOwner():GetFOV() / self:GetRTScopeFOV())
-
-            local realfov = self:GetOwner():GetFOV()
-            local screenamt = ((ScrW() - ScrH()) / ScrW()) * (atttbl.ScopeScreenRatio or 0.5) * 2
-            target = (realfov / self:GetRTScopeFOV()) * screenamt
-
-            target = math.max(target, 1)
+            target = math.max(target * self:GetRealZoom(sight), 1)
         end
     end
 
     return target
 end
 
+local aa = GetConVar("arc9_aimassist")
+local aac = GetConVar("arc9_aimassist_cl")
+local aai = GetConVar("arc9_aimassist_intensity")
+local aams = GetConVar("arc9_aimassist_multsens")
+local sensmult = GetConVar("arc9_mult_sens")
+local gradualaim = GetConVar("arc9_gradual_sens")
+
 function SWEP:AdjustMouseSensitivity()
-    if !self:GetInSights() then return end
-    if !arc9_compensate_sens:GetBool() then return end
+	if self:GetOwner().ARC9_AATarget != nil and (!self:GetProcessedValue("NoAimAssist", true) and aa:GetBool() and aac:GetBool()) then
+		aamult = aams:GetFloat() / aai:GetFloat()
+	else
+		aamult = 1
+	end
 
-    if self.Peeking then
-        return
-    end
+	local gsa = self:GetSightAmount()
+	
+    if !self:GetInSights() then 
+	-- if gsa <= 0.01 then -- Active if "Sight amount" is over 1%. Experimental.
+		local amt = 1
+		amt = math.sqrt(amt)
+		
+		return amt * aamult
+	else
+		if !arc9_compensate_sens:GetBool() then return end
 
-    local mag = self:GetMagnification()
-    local fov = fov_desired:GetFloat()
-	local sensmult = GetConVar("arc9_mult_sens")
+		local magdef = self.IronSights.Magnification
+		local mag = self:GetMagnification()
+		local fov = fov_desired:GetFloat()
 
-    local sight = self:GetSight()
-    local atttbl = sight.atttbl
+		local sight = self:GetSight()
+		local atttbl = sight.atttbl
+		
+		if sight.BaseSight then
+			atttbl = self:GetTable()
+		end
 
-    if sight.BaseSight then
-        atttbl = self:GetTable()
-    end
+		if atttbl and atttbl.RTScope and !sight.Disassociate and !sight.NoSensAdjustment and !atttbl.RTCollimator then
+			mag = mag + (fov / (self:GetRTScopeFOV() or 90))
+		end
 
-    if atttbl and atttbl.RTScope and !sight.Disassociate and !sight.NoSensAdjustment and !atttbl.RTCollimator then
-        mag = mag + (fov / (self:GetRTScopeFOV() or 90))
-    end
+		if self.Peeking and !self.PeekingIsSight then
+			mag = magdef
+		end
 
-    if mag > 0 then
-        local amt = 1 / (1 - (self:GetSightAmount() * (1 - mag)))
-        amt = math.sqrt(amt)
+		if mag > 0 then
+			local amt = 1 / (1 - (self:GetSightAmount() * (1 - mag)))
 
-        return amt * sensmult:GetFloat()
-    end
+			amt = math.sqrt(amt)
+			
+			if gradualaim:GetBool() then
+				return amt * aamult * ( 1 - math.Clamp(gsa, 0.1, math.Clamp(1 - sensmult:GetFloat(), 0.1, 1)) )
+			else
+				return amt * sensmult:GetFloat() * aamult
+			end
+		end
+	end
+
 end

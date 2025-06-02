@@ -63,7 +63,7 @@ ATT.Hook_OnKill = function(self, ent)
         sql.Query("INSERT INTO arc9_killcounter (weapon, npckills, playerkills) VALUES ('" .. weapon .. "', 0, 0)")
     end
 
-    if ent:IsNPC() then
+    if ent:IsNPC() or ent:IsNextBot() then
         npckills = npckills + 1
         sql.Query("UPDATE arc9_killcounter SET npckills = " .. npckills .. " WHERE weapon = '" .. weapon .. "'")
     else
@@ -123,7 +123,7 @@ if CLIENT then
 
         local w3, h3 = surface.GetTextSize(text3)
 
-        surface.SetTextPos(256 - w3 - 16, 128 + 48)
+        surface.SetTextPos(256 - w3 - 16 - 5, 120)
         surface.SetTextColor(255, 255, 255, 255)
         surface.DrawText(text3)
 

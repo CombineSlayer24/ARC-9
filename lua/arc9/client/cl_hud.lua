@@ -31,7 +31,7 @@ ARC9.Colors = {
     fg      = Color(255, 255, 255), --
     hi      = Color(255, 123, 0), --
     hint    = Color(200, 200, 200, 120), --
-    unowned = Color(180, 180, 180, 255),
+    unowned = Color(255, 255, 255, 32),
 
     notoccupied      = Color(216, 216, 216, 70), --
 
@@ -54,17 +54,22 @@ ARC9.Colors = {
 local cl_drawhud = GetConVar("cl_drawhud")
 local arc9_hud_arc9 = GetConVar("arc9_hud_arc9")
 local arc9_hud_always = GetConVar("arc9_hud_always")
+local arc9_hud_force_disable = GetConVar("arc9_hud_force_disable")
+local infammo = GetConVar("arc9_infinite_ammo")
 
 function ARC9.ShouldDrawHUD()
     if !cl_drawhud:GetBool() then return end
+    -- if arc9_hud_force_disable:GetBool() then return end
 
     local wpn = LocalPlayer():GetActiveWeapon()
-    local a9 = wpn.ARC9
+    local a9 = wpn.ARC9 and !wpn.NotAWeapon
     local incust = a9 and wpn:GetCustomize()
     -- local hud = arc9_hud_arc9:GetBool()
     -- local hudalways = arc9_hud_always:GetBool()
 
     hide.CHudGMod = incust
+
+	if arc9_hud_force_disable:GetBool() and !incust then return end
 
     -- if (!hud and !incust) or (!a9 and !hudalways) then return end
     if (!arc9_hud_arc9:GetBool() and !incust) or (!a9 and !arc9_hud_always:GetBool()) then return end -- this line was hard
@@ -111,6 +116,10 @@ local events = {
         months = { [1] = true },
         days = { [1] = true },
     },
+    ["Leap Day"] = {
+        months = { [2] = true },
+        days = { [29] = true },
+    },
     -- ["Opposite Day"] = {
     --     months = { 1 },
     --     days = { 25 },
@@ -129,15 +138,15 @@ local events = {
     },
     ["Halloween"] = {
         months = { [10] = true },
-        days = alldays,
+        days = { [31] = true },
     },
     ["Thanksgiving"] = {
-        months = { [9] = true, [11] = true }, -- Also includes September to give it a brownish theme
-        days = alldays,
+        months = { [11] = true }, 
+        days = { [23] = true },
     },
     ["Christmas"] = {
         months = { [12] = true },
-        days = alldays,
+        days = { [25] = true },
     },
     ["Birthday - Arctic"] = {
         months = { [7] = true },
@@ -153,6 +162,39 @@ local events = {
     },
 }
 
+local holidayscolors = {
+    ["Christmas"] = {
+        hi     = Color(184, 210, 160),
+        bg     = Color(153, 113, 110, 97),
+        bgdark = Color(33, 11, 9, 240),
+    },
+    ["Halloween"] = {
+        hi     = Color(255, 187, 132),
+        bg     = Color(120, 110, 153, 97),
+        bgdark = Color(14, 6, 37, 240),
+    },
+    ["Thanksgiving"] = {
+        hi     = Color(240, 195, 172),
+        bg     = Color(153, 137, 110, 97),
+        bgdark = Color(38, 34, 27, 240),
+    },
+    ["New Year's"] = {
+        hi     = Color(255, 255, 200),
+        bg     = Color(114, 114, 153, 97),
+        bgdark = Color(30, 30, 40, 240),
+    },
+    ["Birthday - Arctic"] = {
+        hi     = Color(210, 235, 255),
+        bg     = Color(153, 153, 114, 97),
+        bgdark = Color(40, 40, 30, 240),
+    },
+    ["None"] = {
+        hi     = ARC9.Colors.hi,
+        bg     = ARC9.Colors.bg,
+        bgdark = ARC9.Colors.bgdark,
+    },
+}
+
 local arc9_holiday_month = GetConVar("arc9_holiday_month")
 local arc9_holiday_day = GetConVar("arc9_holiday_day")
 
@@ -164,59 +206,62 @@ function ARC9.GetTime()
     end
 end
 
-function ARC9.GetHoliday()
+function ARC9.GetHolidayColor()
     local d = os.date( "*t", ARC9.GetTime() )
-    return d
+    for i,j in pairs(holidayscolors) do
+        if i == "None" then continue end
+        if events[i].days[d.day] and events[i].months[d.month] then
+            return i
+        end
+    end
+    return "None"
 end
 
 ARC9.ActiveHolidays = {}
 
-local holidayscolors = {
-    ["Christmas"] = {
-        -- fg     = Color(184, 210, 160),
-        -- shadow = Color(33, 11, 9),
-    },
-    ["Halloween"] = {
-        -- fg     = Color(255, 187, 132),
-        -- shadow = Color(14, 6, 37),
-    },
-    ["Thanksgiving"] = {
-        -- fg     = Color(240, 195, 172),
-        -- shadow = Color(38, 34, 27),
-    },
-    ["Summer Break"] = {
-        -- fg     = Color(255, 255, 200),
-        -- shadow = Color(30, 30, 40, 255*0.6),
-    },
-    ["Birthday - Arctic"] = {
-        -- fg     = Color(210, 235, 255),
-        -- shadow = Color(40, 40, 30, 255*0.6),
-    }
-}
+local d = os.date( "*t", ARC9.GetTime() )
+for i,j in pairs(events) do
+	if j.days[d.day] and j.months[d.month] then
+		ARC9.ActiveHolidays[i] = true
+	end
+end
 
 local arc9_hud_color_r = GetConVar("arc9_hud_color_r")
 local arc9_hud_color_g = GetConVar("arc9_hud_color_g")
 local arc9_hud_color_b = GetConVar("arc9_hud_color_b")
-local arc9_hud_darkmode = GetConVar("arc9_hud_darkmode")
+local arc9_hud_lightmode = GetConVar("arc9_hud_lightmode")
+local arc9_hud_holiday = GetConVar("arc9_hud_holiday")
 
 function ARC9.GetHUDColor(part, alpha)
     alpha = alpha or 255
+    local holidayenabled = arc9_hud_holiday:GetBool()
     local col = ARC9.Colors[part] or ARC9.Colors.hi
-
+    local holidaycol = holidayscolors[ARC9.GetHolidayColor()]
+    
+    
     if part == "hi" then
         col = Color(
             arc9_hud_color_r:GetInt(),
             arc9_hud_color_g:GetInt(),
             arc9_hud_color_b:GetInt()
         )
-    end
-
-    if part == "bg" then
-        if arc9_hud_darkmode:GetBool() then
-            col = ARC9.Colors["bgdark"]
+        if holidayenabled then
+            col = holidaycol.hi
         end
     end
 
+    if part == "bg" then
+        if holidayenabled then
+            col = holidaycol.bg
+        end
+        if !arc9_hud_lightmode:GetBool() then
+            col = ARC9.Colors["bgdark"]
+            if holidayenabled then
+                col = holidaycol.bgdark
+            end
+        end
+    end
+    
     if alpha < 255 then
         col = Color(col.r, col.g, col.b)
         col.a = alpha or 255
@@ -232,7 +277,7 @@ local hint_alpha = 1
 local lasthintcount = 0
 local hidefadetime = 0
 local first = true
-local convar_keephints = GetConVar("arc9_hud_keephints")
+local convar_hints = GetConVar("arc9_hud_hints")
 
 local hud_bg = Material("arc9/hud_bg.png", "mips smooth")
 local hud_t_full = Material("arc9/thermometer_full.png", "mips")
@@ -257,14 +302,14 @@ local automatics = {
     ["weapon_egon"] = true
 }
 
-local arc9_lean = GetConVar("arc9_lean")
+-- local arc9_lean = GetConVar("arc9_lean")
 
 local function GetWeaponCapabilities(wpn)
     cap = {
         UBGL = tobool(!wpn:GetInSights() and wpn:GetValue("UBGL")),
         Bash = tobool(!wpn:GetInSights() and wpn:GetValue("Bash")),
         SwitchSights = tobool(wpn:GetInSights() and #wpn.MultiSightTable > 1),
-        Inspect = !wpn:GetInSights() and tobool(wpn:HasAnimation("enter_inspect") or wpn:HasAnimation("inspect")),
+        Inspect = !wpn:GetInSights() and !wpn.NoInspect and tobool(wpn:HasAnimation("enter_inspect") or wpn:HasAnimation("inspect")),
         -- Blindfire = tobool(!wpn:GetInSights() and wpn:GetValue("CanBlindFire")),
         -- BlindfireLeft = tobool(!wpn:GetInSights() and wpn:GetValue("CanBlindFire") and wpn:GetValue("BlindFireLeft")),
         -- BlindfireRight = tobool(!wpn:GetInSights() and wpn:GetValue("CanBlindFire") and wpn:GetValue("BlindFireRight")),
@@ -272,7 +317,7 @@ local function GetWeaponCapabilities(wpn)
         HoldBreath = tobool(wpn:GetInSights() and wpn:GetValue("HoldBreathTime") > 0),
         VariableZoom = tobool(wpn:GetInSights() and (wpn:GetSight().atttbl or {}).RTScopeAdjustable),
         ManualCycle = tobool(wpn:GetNeedsCycle() and wpn:ShouldManualCycle()),
-        Lean = tobool(wpn:GetProcessedValue("CanLean", true) and arc9_lean:GetBool()),
+        -- Lean = tobool(wpn:GetProcessedValue("CanLean", true) and arc9_lean:GetBool()),
     }
 
     return cap
@@ -280,19 +325,21 @@ end
 
 local function GetHintsTable(capabilities)
     local weapon = LocalPlayer():GetActiveWeapon()
+	local wait = weapon:StillWaiting()
     local hints = {}
 
     if capabilities.UBGL then
+		local ubgltext = weapon:GetProcessedValue("UBGLFiremodeName", true)
         if ARC9.GetKeyIsBound("+arc9_ubgl") then
             table.insert(hints, {
                 glyph = ARC9.GetBindKey("+arc9_ubgl"),
-                action = ARC9:GetPhrase("hud.hint.ubgl") .. " " .. tostring(weapon:GetProcessedValue("UBGLFiremodeName"))
+                action = string.format(ARC9:GetPhrase("hud.hint.ubgl"), tostring(ARC9:GetPhrase(ubgltext) or ubgltext))
             })
         else
             table.insert(hints, {
                 glyph = ARC9.GetBindKey("+use"),
                 glyph2 = ARC9.GetBindKey("+attack2"),
-                action = ARC9:GetPhrase("hud.hint.ubgl") .. " " .. tostring(weapon:GetProcessedValue("UBGLFiremodeName"))
+                action = string.format(ARC9:GetPhrase("hud.hint.ubgl"), tostring(ARC9:GetPhrase(ubgltext) or ubgltext))
             })
         end
     end
@@ -304,20 +351,21 @@ local function GetHintsTable(capabilities)
                 action = ARC9:GetPhrase("hud.hint.switchsights")
             })
         else
+			dtap = GetConVar("arc9_dtap_sights"):GetBool()
             table.insert(hints, {
                 glyph = ARC9.GetBindKey("+use"),
-                glyph2 = ARC9.GetBindKey("invnext"),
+				glyph2 = !dtap and ARC9.GetBindKey("invnext") or ARC9.GetBindKey("+use"),
                 action = ARC9:GetPhrase("hud.hint.switchsights")
-            })
+            }) -- TODO: hardcoded to mouse wheel, see sh_move.lua ARC9.StartCommand
         end
     end
 
     if capabilities.VariableZoom then
         table.insert(hints, {
-            glyph = ARC9.GetBindKey("invnext"),
-            glyph2 = ARC9.GetBindKey("invprev"),
+            glyph = !input.LookupBinding("invnext") and !(input.LookupKeyBinding(113) != nil and input.LookupKeyBinding(113):len() > 0) and "shared_mouse_scroll_down" or ARC9.GetBindKey("invnext"),
+            glyph2 = !input.LookupBinding("invprev") and !(input.LookupKeyBinding(112) != nil and input.LookupKeyBinding(112):len() > 0) and "shared_mouse_scroll_up" or ARC9.GetBindKey("invprev"),
             action = ARC9:GetPhrase("hud.hint.zoom")
-        })
+        }) -- use mouse wheel if invnext or invprev not bound, possible convar to swap maybe? currently for semi parity with switchsights
     end
 
     if capabilities.HoldBreath then
@@ -327,19 +375,26 @@ local function GetHintsTable(capabilities)
         })
     end
 
-    if capabilities.Bash then
-        if ARC9.GetKeyIsBound("+arc9_melee") then
-            table.insert(hints, {
-                glyph = ARC9.GetBindKey("+arc9_melee"),
-                action = ARC9:GetPhrase("hud.hint.bash")
-            })
-        else
-            table.insert(hints, {
-                glyph = ARC9.GetBindKey("+use"),
-                glyph2 = ARC9.GetBindKey("+attack"),
-                action = ARC9:GetPhrase("hud.hint.bash")
-            })
-        end
+    if capabilities.Bash and !weapon.PrimaryBash then
+		if weapon.SecondaryBash then -- If the weapon performs bashing as the primary attack function, only display the "+attack" function.
+			table.insert(hints, {
+				glyph = ARC9.GetBindKey("+attack2"),
+				action = ARC9:GetPhrase("hud.hint.bash")
+			})
+		else
+			if ARC9.GetKeyIsBound("+arc9_melee") then
+				table.insert(hints, {
+					glyph = ARC9.GetBindKey("+arc9_melee"),
+					action = ARC9:GetPhrase("hud.hint.bash")
+				})
+			else
+				table.insert(hints, {
+					glyph = ARC9.GetBindKey("+use"),
+					glyph2 = ARC9.GetBindKey("+attack"),
+					action = ARC9:GetPhrase("hud.hint.bash")
+				})
+			end
+		end
     end
 
     if capabilities.Inspect then
@@ -358,7 +413,7 @@ local function GetHintsTable(capabilities)
     end
 
     if capabilities.Firemode then
-        table.insert(hints, {
+		table.insert(hints, {
             glyph = ARC9.GetBindKey("+zoom"),
             action = ARC9:GetPhrase("hud.hint.firemode")
         })
@@ -378,47 +433,77 @@ local function GetHintsTable(capabilities)
         })
     end
 
-    table.insert(hints, {
-        glyph = ARC9.GetBindKey("+menu_context"),
-        action = weapon:GetInSights() and ARC9:GetPhrase("hud.hint.peek") or ARC9:GetPhrase("hud.hint.customize") })
-
-    table.insert(hints, {
-        glyph = ARC9.GetBindKey("+use"),
-        glyph2 = ARC9.GetBindKey("+zoom"),
-        action = ARC9:GetPhrase("hud.hint.safe")
-    })
-
-    if capabilities.Lean and input.LookupBinding("+alt1") and input.LookupBinding("+alt2") then
+    local cantpeek = weapon:GetProcessedValue("CantPeek", true)
+	local sight = weapon:GetInSights()
+	local bipod = weapon:GetBipod()
+    if !(cantpeek and sight) and !(sight and bipod) then 
         table.insert(hints, {
-            glyph = ARC9.GetBindKey("+alt1"),
-            glyph2 = ARC9.GetBindKey("+alt2"),
-            action = ARC9:GetPhrase("hud.hint.lean")
+            glyph = ARC9.GetBindKey("+menu_context"),
+            action = !cantpeek and weapon:GetInSights() and ARC9:GetPhrase("hud.hint.peek") or ARC9:GetPhrase("hud.hint.customize") 
         })
+    end
+
+    if !weapon.CantSafety then 
+        table.insert(hints, {
+            glyph = ARC9.GetBindKey("+use"),
+            glyph2 = ARC9.GetBindKey("+zoom"),
+            action = ARC9:GetPhrase("hud.hint.safe")
+        })
+    end
+
+    if weapon.EFT_HasTacReloads and (!weapon:GetProcessedValue("ShotgunReload", true) or weapon.EFT_HasTacReloadsAlways) then 
+        table.insert(hints, {
+            glyph = ARC9.GetBindKey("+reload"),
+            glyph2 = ARC9.GetBindKey("+reload"),
+            action = ARC9:GetPhrase("hud.hint.quickreload")
+        })
+    end
+
+    -- if capabilities.Lean and input.LookupBinding("+alt1") and input.LookupBinding("+alt2") then
+    --     table.insert(hints, {
+    --         glyph = ARC9.GetBindKey("+alt1"),
+    --         glyph2 = ARC9.GetBindKey("+alt2"),
+    --         action = ARC9:GetPhrase("hud.hint.lean")
+    --     })
+    -- end
+
+    local owner = weapon:GetOwner()
+    local quicknade = owner.ARC9LastSelectedGrenade
+    if quicknade then
+        local quicknadeent = owner:GetWeapon(quicknade)
+        if IsValid(quicknadeent) then
+            local howmanyquicknades = infammo:GetBool() and 0 or owner:GetAmmoCount(quicknadeent.Ammo)
+            if quicknade and owner:HasWeapon(quicknade) and !weapon.IsQuickGrenade then
+                table.insert(hints, {
+                    glyph = ARC9.GetBindKey("+grenade1"),
+                    action = string.format(ARC9:GetPhrase("hud.hint.quicknade"), (quicknadeent.ShortPrintName and quicknadeent.ShortPrintName or quicknadeent.PrintName)) .. (howmanyquicknades > 0 and " (" .. howmanyquicknades + 1 .. ")" or "")
+                })
+            end
+        end
     end
 
     for i, v in ipairs(hints) do
         if ARC9.CTRL_Lookup[v.glyph] then v.glyph = ARC9.CTRL_Lookup[v.glyph] end
         if ARC9.CTRL_ConvertTo[v.glyph] then v.glyph = ARC9.CTRL_ConvertTo[v.glyph] end
-        if ARC9.CTRL_Exists[v.glyph] then v.glyph = Material( "arc9/glyphs_light/" .. v.glyph .. "_lg" .. ".png", "smooth" ) end
+        if ARC9.CTRL_Exists[v.glyph] then v.glyph = Material( "arc9/" .. ARC9.GlyphFamilyHUD() .. v.glyph .. ".png", "mips smooth" ) end
         if v.glyph2 then
             if ARC9.CTRL_Lookup[v.glyph2] then v.glyph2 = ARC9.CTRL_Lookup[v.glyph2] end
             if ARC9.CTRL_ConvertTo[v.glyph2] then v.glyph2 = ARC9.CTRL_ConvertTo[v.glyph2] end
-            if ARC9.CTRL_Exists[v.glyph2] then v.glyph2 = Material( "arc9/glyphs_light/" .. v.glyph2 .. "_lg" .. ".png", "smooth" ) end
+            if ARC9.CTRL_Exists[v.glyph2] then v.glyph2 = Material( "arc9/" .. ARC9.GlyphFamilyHUD() .. v.glyph2 .. ".png", "mips smooth" ) end
         end
     end
 
     return hints
 end
 
-local arc9_hud_nohints = GetConVar("arc9_hud_nohints")
 local arc9_hud_compact = GetConVar("arc9_hud_compact")
 local deadzonex = GetConVar("arc9_hud_deadzonex")
 
 local function DrawSimpleHints()
-    if arc9_hud_nohints:GetBool() then return end
+    if convar_hints:GetFloat() == 0 then return end
 
     local weapon = LocalPlayer():GetActiveWeapon()
-    if !weapon.ARC9 then return end
+    if !weapon.ARC9 or weapon.NotAWeapon then return end
 
     if !cl_drawhud:GetBool() then return end
     if weapon:GetCustomize() then return end
@@ -455,20 +540,20 @@ local function DrawSimpleHints()
     else
         hint_alpha = math.Approach(hint_alpha, 0, FrameTime() / 1)
     end
-    if convar_keephints:GetBool() then hint_alpha = 1 end
+    if convar_hints:GetFloat() == 2 then hint_alpha = 1 end
 
     local hints_w = ARC9ScreenScale(100)
-    local hints_h = ARC9ScreenScale(12) * table.Count(hints)
+    local hints_h = ARC9ScreenScale(11) * table.Count(hints)
 
     hx = ARC9ScreenScale(10) + deadzonex:GetInt()
     hy = (ScrH() - hints_h) / 2
 
     surface.SetDrawColor(ARC9.GetHUDColor("shadow", 160 * hint_alpha))
     surface.SetMaterial(hud_sillyhints)
-    surface.DrawTexturedRect(-ARC9ScreenScale(5) + deadzonex:GetInt(), hy-ARC9ScreenScale(7.5), hints_w, hints_h+ARC9ScreenScale(15))
+    surface.DrawTexturedRect(-ARC9ScreenScale(5) + deadzonex:GetInt(), hy-ARC9ScreenScale(12.5), hints_w, hints_h+ARC9ScreenScale(25))
 
-    local off_x = ARC9ScreenScale(0.5)
-    local off_y = ARC9ScreenScale(0.5)
+    local off_x = ARC9ScreenScale(1)
+    local off_y = ARC9ScreenScale(1)
 
     local txt_off_y = -ARC9ScreenScale(0.8)
 
@@ -478,15 +563,14 @@ local function DrawSimpleHints()
         surface.SetDrawColor(ARC9.GetHUDColor("shadow", 100 * hint_alpha))
         surface.SetTextColor(ARC9.GetHUDColor("shadow", 100 * hint_alpha))
         surface.SetTextPos(hx + off_x, hy + off_y)
-        strreturn = CreateControllerKeyLine( {x = hx + off_x, y = hy + off_y, size = ARC9ScreenScale(9), font_keyb = "ARC9_10", font = "ARC9_10" }, { hint.glyph, SIZE }, (hint.glyph2 and " " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
+        strreturn = CreateControllerKeyLine( {x = hx + off_x, y = hy + off_y, size = ARC9ScreenScale(9), font_keyb = "ARC9_10", font = "ARC9_10" }, { hint.glyph, SIZE }, (hint.glyph2 and "  " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
         CreateControllerKeyLine( {x = hx + off_x + math.max(strreturn, ARC9ScreenScale(25)), y = hy + txt_off_y + off_y, size = ARC9ScreenScale(10), font_keyb = "ARC9_10", font = "ARC9_10" }, " " .. hint.action )
-
 
         surface.SetFont("ARC9_10")
         surface.SetDrawColor(ARC9.GetHUDColor("fg", 200 * hint_alpha))
         surface.SetTextColor(ARC9.GetHUDColor("fg", 200 * hint_alpha))
         surface.SetTextPos(hx, hy)
-        strreturn = CreateControllerKeyLine( {x = hx, y = hy, size = ARC9ScreenScale(9), font_keyb = "ARC9_10", font = "ARC9_10" }, { hint.glyph, SIZE }, (hint.glyph2 and " " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
+        strreturn = CreateControllerKeyLine( {x = hx, y = hy, size = ARC9ScreenScale(9), font_keyb = "ARC9_10", font = "ARC9_10" }, { hint.glyph, SIZE }, (hint.glyph2 and "  " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
         CreateControllerKeyLine( {x = hx + math.max(strreturn, ARC9ScreenScale(25)), y = hy + txt_off_y, size = ARC9ScreenScale(10), font_keyb = "ARC9_10", font = "ARC9_10" }, " " .. hint.action )
 
         hy = hy + ARC9ScreenScale(12)
@@ -563,7 +647,7 @@ function ARC9.DrawHUD()
         if weapon:GetUBGL() then
             arc9_mode = {
                 Mode = weapon:GetCurrentFiremode(),
-                PrintName = weapon:GetProcessedValue("UBGLFiremodeName")
+                PrintName = weapon:GetProcessedValue("UBGLFiremodeName", true)
             }
             firemode_text = arc9_mode.PrintName
             weapon_clipsize = weapon:GetMaxClip2()
@@ -614,7 +698,7 @@ function ARC9.DrawHUD()
         if weapon:GetProcessedValue("Overheat", true) then
             showheat = true
             heat = weapon:GetHeatAmount()
-            heatcap = weapon:GetProcessedValue("HeatCapacity")
+            heatcap = weapon:GetProcessedValue("HeatCapacity", true)
             heatlocked = weapon:GetHeatLockout()
         end
     elseif weapon.ArcCW then
@@ -1032,16 +1116,16 @@ function ARC9.DrawHUD()
 
             if ARC9.CTRL_Lookup[fmh_text] then fmh_text = ARC9.CTRL_Lookup[fmh_text] end
             if ARC9.CTRL_ConvertTo[fmh_text] then fmh_text = ARC9.CTRL_ConvertTo[fmh_text] end
-            if ARC9.CTRL_Exists[fmh_text] then fmh_text = Material( "arc9/glyphs_knockout/" .. fmh_text .. "_lg" .. ".png", "smooth" ) else fmh_text = "["..fmh_text.."]" end
-            fmh_text = isstring(fmh_text) and fmh_text or { fmh_text, 16 }
+            if ARC9.CTRL_Exists[fmh_text] then fmh_text = Material( "arc9/" .. ARC9.GlyphFamilyHUD() .. fmh_text .. ".png", "smooth" ) else fmh_text = "["..fmh_text.."]" end
+            fmh_text = isstring(fmh_text) and fmh_text or { fmh_text, 15 }
 
-            surface.SetDrawColor(ARC9.GetHUDColor("shadow_3d", 100))
-            surface.SetTextColor(ARC9.GetHUDColor("shadow_3d", 100))
+            surface.SetDrawColor(ARC9.GetHUDColor("shadow", 100))
+            surface.SetTextColor(ARC9.GetHUDColor("shadow", 100))
             surface.SetFont("ARC9_12_LCD")
             local fmh_w = GetControllerKeyLineSize( { font = "ARC9_12_LCD" }, fmh_text )
             CreateControllerKeyLine( { x = fmh_x + s_right - fmh_w, y = fmh_y + s_down, size = 16, font = "ARC9_12_LCD" }, fmh_text )
 
-            surface.SetDrawColor(ARC9.GetHUDColor("fg_3d", 255))
+            surface.SetDrawColor(ARC9.GetHUDColor("fg", 200 * hint_alpha))
             surface.SetTextColor(ARC9.GetHUDColor("fg_3d", 255))
             surface.SetFont("ARC9_12_LCD")
             CreateControllerKeyLine( { x = fmh_x - fmh_w, y = fmh_y, size = 16, font = "ARC9_12_LCD" }, fmh_text )
@@ -1133,7 +1217,7 @@ function ARC9.DrawHUD()
 
     cam.End3D2D()
 
-    if weapon.ARC9 and !arc9_hud_nohints:GetBool() then
+    if weapon.ARC9 and convar_hints:GetFloat() > 0 then
         local capabilities = GetWeaponCapabilities(weapon)
 
         -- local hints = {
@@ -1170,6 +1254,8 @@ function ARC9.DrawHUD()
             first = false
         end
 
+		-- hints = table.Reverse(hints)
+
         lasthintcount = #hints
 
         local hx = 0
@@ -1181,21 +1267,28 @@ function ARC9.DrawHUD()
         else
             hint_alpha = math.Approach(hint_alpha, 0, FrameTime() / 1)
         end
-        if convar_keephints:GetBool() then hint_alpha = 1 end
+        if convar_hints:GetFloat() == 2 then hint_alpha = 1 end
 
-        cam.Start3D2D(pos - (ang:Right() * ((16 * #hints * 0.0125) + 0.25)), ang, 0.0125)
+        cam.Start3D2D(pos - (ang:Right() * ((20 * #hints * 0.0125) + 0.25)), ang, 0.0125)
             surface.SetDrawColor(ARC9.GetHUDColor("shadow", 150 * hint_alpha))
             surface.SetMaterial(hud_bigblur)
-            surface.DrawTexturedRect(-32, 0, 300, 16 * #hints)
+            surface.DrawTexturedRect(-32, 0, 300, 20 * #hints)
 
+			local lang = ARC9:GetLanguage()
             for _, hint in ipairs(hints) do
+				local hintcaps = hint.action
+			
+				if lang == "ru" then
+					hintcaps = ARC9:UperCyrillic(hint.action)
+				end
+
                 local strreturn = 0
                 surface.SetFont("ARC9_16_Unscaled")
                 surface.SetDrawColor(ARC9.GetHUDColor("shadow", 100 * hint_alpha))
                 surface.SetTextColor(ARC9.GetHUDColor("shadow", 100 * hint_alpha))
                 surface.SetTextPos(hx + 4, hy + 2)
-                strreturn = CreateControllerKeyLine( {x = hx + 4, y = hy + 2, size = 16, font = "ARC9_16_Unscaled" }, { hint.glyph, SIZE }, (hint.glyph2 and " " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
-                CreateControllerKeyLine( {x = hx + 4 + math.max(strreturn, 48), y = hy + 2, size = 16, font = "ARC9_16_Unscaled" }, " " .. hint.action )
+                strreturn = CreateControllerKeyLine( {x = hx + 2, y = hy + 1, size = 16, font = "ARC9_16_Unscaled" }, { hint.glyph, SIZE }, (hint.glyph2 and " " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
+                CreateControllerKeyLine( {x = hx + 4 + math.max(strreturn, 48), y = hy + 2, size = 16, font = "ARC9_16_Unscaled" }, " " .. hintcaps )
 
 
                 surface.SetFont("ARC9_16_Unscaled")
@@ -1203,9 +1296,9 @@ function ARC9.DrawHUD()
                 surface.SetTextColor(ARC9.GetHUDColor("fg", 200 * hint_alpha))
                 surface.SetTextPos(hx, hy)
                 strreturn = CreateControllerKeyLine( {x = hx, y = hy, size = 16, font = "ARC9_16_Unscaled" }, { hint.glyph, SIZE }, (hint.glyph2 and " " or ""), (hint.glyph2 and { hint.glyph2, SIZE } or "") )
-                CreateControllerKeyLine( {x = hx + math.max(strreturn, 48), y = hy, size = 16, font = "ARC9_16_Unscaled" }, " " .. hint.action )
+                CreateControllerKeyLine( {x = hx + math.max(strreturn, 48), y = hy, size = 16, font = "ARC9_16_Unscaled" }, " " .. hintcaps )
 
-                hy = hy + 16
+                hy = hy + 22
             end
         cam.End3D2D()
     end
@@ -1226,195 +1319,70 @@ function ARC9.ControllerMode()
     return convar_controllermode:GetBool()
 end
 
-ARC9.CTRL_Set_PS4 = {
-    xbox_button_select = "ps4_button_share",
-    xbox_button_start = "ps4_button_options",
-    xbox_button_logo = "ps4_button_logo",
-
-    shared_button_a = "ps_button_x",
-    shared_button_b = "ps_button_circle",
-    shared_button_x = "ps_button_square",
-    shared_button_y = "ps_button_triangle",
-
-    xbox_lb = "ps4_l1",
-    xbox_rb = "ps4_r1",
-    xbox_lt = "ps4_l2",
-    xbox_rt = "ps4_r2",
-    xbox_lt_soft = "ps4_l2_soft",
-    xbox_rt_soft = "ps4_r2_soft",
-
-    shared_dpad = "ps_dpad",
-    shared_dpad_down = "ps_dpad_down",
-    shared_dpad_up = "ps_dpad_up",
-    shared_dpad_left = "ps_dpad_left",
-    shared_dpad_right = "ps_dpad_right",
-}
-ARC9.CTRL_Set_PS5 = {
-    xbox_button_select = "ps5_button_create",
-    xbox_button_start = "ps5_button_options",
-    xbox_button_logo = "ps4_button_logo",
-
-    shared_button_a = "ps_button_x",
-    shared_button_b = "ps_button_circle",
-    shared_button_x = "ps_button_square",
-    shared_button_y = "ps_button_triangle",
-
-    xbox_lb = "ps5_l1",
-    xbox_rb = "ps5_r1",
-    xbox_lt = "ps5_l2",
-    xbox_rt = "ps5_r2",
-    xbox_lt_soft = "ps5_l2_soft",
-    xbox_rt_soft = "ps5_r2_soft",
-
-    shared_dpad = "ps_dpad",
-    shared_dpad_down = "ps_dpad_down",
-    shared_dpad_up = "ps_dpad_up",
-    shared_dpad_left = "ps_dpad_left",
-    shared_dpad_right = "ps_dpad_right",
-
-}
-ARC9.CTRL_Set_SwitchPro = {
-    xbox_button_select = "switchpro_button_minus",
-    xbox_button_start = "switchpro_button_plus",
-    xbox_button_logo = "switchpro_button_home",
-
-    -- WHY DO I ALWAYS GET THE FREAKS?!
-    shared_button_a = "shared_button_b",
-    shared_button_b = "shared_button_a",
-    shared_button_x = "shared_button_y",
-    shared_button_y = "shared_button_x",
-
-    shared_dpad = "switchpro_dpad",
-    shared_dpad_down = "switchpro_dpad_down",
-    shared_dpad_up = "switchpro_dpad_up",
-    shared_dpad_left = "switchpro_dpad_left",
-    shared_dpad_right = "switchpro_dpad_right",
-
-    xbox_lb = "switchpro_l",
-    xbox_rb = "switchpro_r",
-    xbox_lt = "switchpro_l2",
-    xbox_rt = "switchpro_r2",
-    xbox_lt_soft = "switchpro_l2_soft",
-    xbox_rt_soft = "switchpro_r2_soft",
-
-    shared_lstick = "switchpro_lstick",
-    shared_lstick_click = "switchpro_lstick_click",
-    shared_lstick_down = "switchpro_lstick_down",
-    shared_lstick_up = "switchpro_lstick_up",
-    shared_lstick_left = "switchpro_lstick_left",
-    shared_lstick_right = "switchpro_lstick_right",
-
-    shared_rstick = "switchpro_rstick",
-    shared_rstick_click = "switchpro_rstick_click",
-    shared_rstick_down = "switchpro_rstick_down",
-    shared_rstick_up = "switchpro_rstick_up",
-    shared_rstick_left = "switchpro_rstick_left",
-    shared_rstick_right = "switchpro_rstick_right",
-}
-ARC9.CTRL_Set_SwitchPro_XboxABXY = {
-    xbox_button_select = "switchpro_button_minus",
-    xbox_button_start = "switchpro_button_plus",
-    xbox_button_logo = "switchpro_button_home",
-
-    -- DON'T THOSE FREAKS HAVE FLIPPED ABXYs
-
-    shared_dpad = "switchpro_dpad",
-    shared_dpad_down = "switchpro_dpad_down",
-    shared_dpad_up = "switchpro_dpad_up",
-    shared_dpad_left = "switchpro_dpad_left",
-    shared_dpad_right = "switchpro_dpad_right",
-
-    xbox_lb = "switchpro_l",
-    xbox_rb = "switchpro_r",
-    xbox_lt = "switchpro_l2",
-    xbox_rt = "switchpro_r2",
-    xbox_lt_soft = "switchpro_l2_soft",
-    xbox_rt_soft = "switchpro_r2_soft",
-
-    shared_lstick = "switchpro_lstick",
-    shared_lstick_click = "switchpro_lstick_click",
-    shared_lstick_down = "switchpro_lstick_down",
-    shared_lstick_up = "switchpro_lstick_up",
-    shared_lstick_left = "switchpro_lstick_left",
-    shared_lstick_right = "switchpro_lstick_right",
-
-    shared_rstick = "switchpro_rstick",
-    shared_rstick_click = "switchpro_rstick_click",
-    shared_rstick_down = "switchpro_rstick_down",
-    shared_rstick_up = "switchpro_rstick_up",
-    shared_rstick_left = "switchpro_rstick_left",
-    shared_rstick_right = "switchpro_rstick_right",
-}
-ARC9.CTRL_Set_SC = {
-    xbox_button_select = "sc_button_l_arrow",
-    xbox_button_start = "sc_button_r_arrow",
-    xbox_button_logo = "sc_button_steam",
-
-    shared_dpad = "sc_dpad",
-    shared_dpad_down = "sc_dpad_down",
-    shared_dpad_up = "sc_dpad_up",
-    shared_dpad_left = "sc_dpad_left",
-    shared_dpad_right = "sc_dpad_right",
-
-    -- shared_dpad_click = "sc_dpad_click"
-    -- shared_dpad_swipe = "sc_dpad_swipe"
-    -- shared_dpad_touch = "sc_dpad_touch"
-
-    xbox_lb = "sc_lb",
-    xbox_rb = "sc_rb",
-    xbox_lt = "sc_lt",
-    xbox_rt = "sc_rt",
-    xbox_lt_soft = "sc_lt_soft",
-    xbox_rt_soft = "sc_rt_soft",
-    xbox_p1 = "sc_rg",
-    xbox_p3 = "sc_lg",
-
-    -- xbox_lb_click = "sc_lt_click",
-    -- xbox_rt_click = "sc_rt_click",
-}
-ARC9.CTRL_Set_SD = {
-    xbox_button_select = "button_view",
-    xbox_button_start = "button_menu",
-    xbox_button_logo = "button_steam",
-    xbox_button_share = "button_aux",
-
-    xbox_lb = "sd_l1",
-    xbox_rb = "sd_r1",
-    xbox_lt = "sd_l2",
-    xbox_rt = "sd_r2",
-    xbox_lt_soft = "sd_l2_half",
-    xbox_rt_soft = "sd_r2_half",
-
-    xbox_p1 = "sd_r4",
-    xbox_p2 = "sc_r5",
-    xbox_p3 = "sd_l4",
-    xbox_p4 = "sc_l5",
-}
-ARC9.CTRL_Set_Xbox360 = {
-    xbox_button_select = "xbox360_button_select",
-    xbox_button_start = "xbox360_button_select",
-}
 ARC9.CTRL_Set_Xbox = {}
 ARC9.CTRL_Set_UserCustom = {}
 
 ARC9.CTRL_ConvertTo = ARC9.CTRL_Set_Xbox -- {}
 
+function ARC9.GlyphFamilyHUD()
+	local con = GetConVar("arc9_glyph_family_hud"):GetString()
+	local family = "glyphs_light/" -- Fallback
+	
+	if con == "light" then
+		family = "glyphs_light/"
+	elseif con == "dark" then
+		family = "glyphs_dark/"
+	elseif con == "knockout" then
+		family = "glyphs_knockout/"
+	end
+
+	return family
+end
+
+function ARC9.GlyphFamilyCust()
+	local con = GetConVar("arc9_glyph_family_cust"):GetString()
+	local family = "glyphs_light/" -- Fallback
+	
+	if con == "light" then
+		family = "glyphs_light/"
+	elseif con == "dark" then
+		family = "glyphs_dark/"
+	elseif con == "knockout" then
+		family = "glyphs_knockout/"
+	end
+
+	return family
+end
+
+function ARC9.GlyphSet()
+	local buttonfamily = "Keyboard/"
+	local glyphf = GetConVar("arc9_glyph_type"):GetString()
+	
+	if glyphf == "xbox" then buttonfamily = "Xbox/"
+		elseif glyphf == "ps" then buttonfamily = "PS/"
+		elseif glyphf == "switch" then buttonfamily = "Switch/"
+		else buttonfamily = "Xbox/"
+	end
+
+	return buttonfamily
+end
+
 ARC9.CTRL_Lookup = {
-    MOUSE1 = "shared_mouse_l_click",
-    MOUSE2 = "shared_mouse_r_click",
-    MOUSE3 = "shared_mouse_mid_click",
-    MOUSE4 = "shared_mouse_4",
-    MOUSE5 = "shared_mouse_5",
+    MOUSE1 = "shared_mouse_l_click_lg",
+    MOUSE2 = "shared_mouse_r_click_lg",
+    MOUSE3 = "shared_mouse_mid_click_lg",
+    MOUSE4 = "shared_mouse_5_lg",
+    MOUSE5 = "shared_mouse_4_lg",
 
-    MWHEELUP = "shared_mouse_scroll_up",
-    MWHEELDOWN = "shared_mouse_scroll_down",
+    MWHEELUP = "shared_mouse_scroll_up_lg",
+    MWHEELDOWN = "shared_mouse_scroll_down_lg",
 
-    KP_INS        = "KP 0",
-    KP_END        = "KP 1",
+    KP_INS = "KP 0",
+    KP_END = "KP 1",
     KP_DOWNARROW  = "KP 2",
     KP_PGDN       = "KP 3",
     KP_LEFTARROW  = "KP 4",
-    KP_5          = "KP 5",
+    KP_5   = "KP 5",
     KP_RIGHTARROW = "KP 6",
     KP_HOME       = "KP 7",
     KP_UPARROW    = "KP 8",
@@ -1424,262 +1392,282 @@ ARC9.CTRL_Lookup = {
     KP_MINUS      = "KP -",
     KP_PLUS       = "KP +",
     KP_ENTER      = "KP ENTER",
-    KP_DEL        = "KP .",
+    KP_DEL = "KP .",
+
 }
 
 ARC9.CTRL_Exists = {
-    ps4_button_logo = true,
-    ps4_button_options = true,
-    ps4_button_share = true,
-    ps4_l1 = true,
-    ps4_l2 = true,
-    ps4_l2_soft = true,
-    ps4_r1 = true,
-    ps4_r2 = true,
-    ps4_r2_soft = true,
-    ps4_trackpad_click = true,
-    ps4_trackpad_down = true,
-    ps4_trackpad_l_click = true,
-    ps4_trackpad_l_down = true,
-    ps4_trackpad_l_left = true,
-    ps4_trackpad_l_right = true,
-    ps4_trackpad_l_ring = true,
-    ps4_trackpad_l_swipe = true,
-    ps4_trackpad_l_touch = true,
-    ps4_trackpad_l_up = true,
-    ps4_trackpad_left = true,
-    ps4_trackpad = true,
-    ps4_trackpad_r_click = true,
-    ps4_trackpad_r_down = true,
-    ps4_trackpad_r_left = true,
-    ps4_trackpad_r_right = true,
-    ps4_trackpad_r_ring = true,
-    ps4_trackpad_r_swipe = true,
-    ps4_trackpad_r_touch = true,
-    ps4_trackpad_r_up = true,
-    ps4_trackpad_right = true,
-    ps4_trackpad_ring = true,
-    ps4_trackpad_swipe = true,
-    ps4_trackpad_up = true,
-    ps5_button_create = true,
-    ps5_button_options = true,
-    ps5_l1 = true,
-    ps5_l2 = true,
-    ps5_l2_soft = true,
-    ps5_r1 = true,
-    ps5_r2 = true,
-    ps5_r2_soft = true,
-    ps5_trackpad_click = true,
-    ps5_trackpad_down = true,
-    ps5_trackpad_l_click = true,
-    ps5_trackpad_l_down = true,
-    ps5_trackpad_l_left = true,
-    ps5_trackpad_l_right = true,
-    ps5_trackpad_l_ring = true,
-    ps5_trackpad_l_swipe = true,
-    ps5_trackpad_l_touch = true,
-    ps5_trackpad_l_up = true,
-    ps5_trackpad_left = true,
-    ps5_trackpad = true,
-    ps5_trackpad_r_click = true,
-    ps5_trackpad_r_down = true,
-    ps5_trackpad_r_left = true,
-    ps5_trackpad_r_right = true,
-    ps5_trackpad_r_ring = true,
-    ps5_trackpad_r_swipe = true,
-    ps5_trackpad_r_touch = true,
-    ps5_trackpad_r_up = true,
-    ps5_trackpad_right = true,
-    ps5_trackpad_ring = true,
-    ps5_trackpad_swipe = true,
-    ps5_trackpad_up = true,
-    ps_button_circle = true,
-    ps_button_mute = true,
-    ps_button_square = true,
-    ps_button_triangle = true,
-    ps_button_x = true,
-    ps_color_button_circle = true,
-    ps_color_button_square = true,
-    ps_color_button_triangle = true,
-    ps_color_button_x = true,
-    ps_color_outlined_button_circle = true,
-    ps_color_outlined_button_square = true,
-    ps_color_outlined_button_triangle = true,
-    ps_color_outlined_button_x = true,
-    ps_dpad_down = true,
-    ps_dpad_left = true,
-    ps_dpad = true,
-    ps_dpad_right = true,
-    ps_dpad_up = true,
-    ps_outlined_button_circle = true,
-    ps_outlined_button_square = true,
-    ps_outlined_button_triangle = true,
-    ps_outlined_button_x = true,
-    sc_button_l_arrow = true,
-    sc_button_r_arrow = true,
-    sc_button_steam = true,
-    sc_dpad_click = true,
-    sc_dpad_down = true,
-    sc_dpad_left = true,
-    sc_dpad = true,
-    sc_dpad_right = true,
-    sc_dpad_swipe = true,
-    sc_dpad_touch = true,
-    sc_dpad_up = true,
-    sc_lb = true,
-    sc_lg = true,
-    sc_lt_click = true,
-    sc_lt = true,
-    sc_lt_soft = true,
-    sc_rb = true,
-    sc_rg = true,
-    sc_rt_click = true,
-    sc_rt = true,
-    sc_rt_soft = true,
-    sc_touchpad_click = true,
-    sc_touchpad_down = true,
-    sc_touchpad_edge = true,
-    sc_touchpad_left = true,
-    sc_touchpad = true,
-    sc_touchpad_right = true,
-    sc_touchpad_swipe = true,
-    sc_touchpad_touch = true,
-    sc_touchpad_up = true,
-    sd_button_aux = true,
-    sd_button_menu = true,
-    sd_button_steam = true,
-    sd_button_view = true,
-    sd_l1 = true,
-    sd_l2_half = true,
-    sd_l2 = true,
-    sd_l4 = true,
-    sd_l5 = true,
-    sd_ltrackpad_click = true,
-    sd_ltrackpad_down = true,
-    sd_ltrackpad_left = true,
-    sd_ltrackpad = true,
-    sd_ltrackpad_right = true,
-    sd_ltrackpad_ring = true,
-    sd_ltrackpad_swipe = true,
-    sd_ltrackpad_up = true,
-    sd_r1 = true,
-    sd_r2_half = true,
-    sd_r2 = true,
-    sd_r4 = true,
-    sd_r5 = true,
-    sd_rtrackpad_click = true,
-    sd_rtrackpad_down = true,
-    sd_rtrackpad_left = true,
-    sd_rtrackpad = true,
-    sd_rtrackpad_right = true,
-    sd_rtrackpad_ring = true,
-    sd_rtrackpad_swipe = true,
-    sd_rtrackpad_up = true,
-    shared_button_a = true,
-    shared_button_b = true,
-    shared_button_x = true,
-    shared_button_y = true,
-    shared_buttons_e = true,
-    shared_buttons_n = true,
-    shared_buttons_s = true,
-    shared_buttons_w = true,
-    shared_color_button_a = true,
-    shared_color_button_b = true,
-    shared_color_button_x = true,
-    shared_color_button_y = true,
-    shared_color_outlined_button_a = true,
-    shared_color_outlined_button_b = true,
-    shared_color_outlined_button_x = true,
-    shared_color_outlined_button_y = true,
-    shared_dpad_down = true,
-    shared_dpad_left = true,
-    shared_dpad = true,
-    shared_dpad_right = true,
-    shared_dpad_up = true,
-    shared_gyro = true,
-    shared_gyro_pitch = true,
-    shared_gyro_roll = true,
-    shared_gyro_yaw = true,
-    shared_l3 = true,
-    shared_lstick_click = true,
-    shared_lstick_down = true,
-    shared_lstick_left = true,
-    shared_lstick = true,
-    shared_lstick_right = true,
-    shared_lstick_touch = true,
-    shared_lstick_up = true,
-    shared_mouse_4 = true,
-    shared_mouse_5 = true,
-    shared_mouse_l_click = true,
-    shared_mouse_mid_click = true,
-    shared_mouse_r_click = true,
-    shared_mouse_scroll_down = true,
-    shared_mouse_scroll_up = true,
-    shared_outlined_button_a = true,
-    shared_outlined_button_b = true,
-    shared_outlined_button_x = true,
-    shared_outlined_button_y = true,
-    shared_r3 = true,
-    shared_rstick_click = true,
-    shared_rstick_down = true,
-    shared_rstick_left = true,
-    shared_rstick = true,
-    shared_rstick_right = true,
-    shared_rstick_touch = true,
-    shared_rstick_up = true,
-    shared_touch_doubletap = true,
-    shared_touch = true,
-    shared_touch_tap = true,
-    switchpro_button_capture = true,
-    switchpro_button_home = true,
-    switchpro_button_minus = true,
-    switchpro_button_plus = true,
-    switchpro_dpad_down = true,
-    switchpro_dpad_left = true,
-    switchpro_dpad = true,
-    switchpro_dpad_right = true,
-    switchpro_dpad_up = true,
-    switchpro_l2 = true,
-    switchpro_l2_soft = true,
-    switchpro_l = true,
-    switchpro_lstick_click = true,
-    switchpro_lstick_down = true,
-    switchpro_lstick_left = true,
-    switchpro_lstick = true,
-    switchpro_lstick_right = true,
-    switchpro_lstick_up = true,
-    switchpro_r2 = true,
-    switchpro_r2_soft = true,
-    switchpro_r = true,
-    switchpro_rstick_click = true,
-    switchpro_rstick_down = true,
-    switchpro_rstick_left = true,
-    switchpro_rstick = true,
-    switchpro_rstick_right = true,
-    switchpro_rstick_up = true,
-    xbox360_button_select = true,
-    xbox360_button_start = true,
-    xbox_button_logo = true,
-    xbox_button_select = true,
-    xbox_button_share = true,
-    xbox_button_start = true,
-    xbox_lb = true,
-    xbox_lt = true,
-    xbox_lt_soft = true,
-    xbox_p1 = true,
-    xbox_p2 = true,
-    xbox_p3 = true,
-    xbox_p4 = true,
-    xbox_rb = true,
-    xbox_rt = true,
-    xbox_rt_soft = true,
+
+--[[
+	mousel =  true,
+	mousemid =  true,
+	mouser =  true,
+	mouse4 =  true,
+	mouse5 =  true,
+	mousewhup =  true,
+	mousewhdown =  true,
+	
+-- Shared
+	faced = true,
+	facel = true,
+	facer = true,
+	faceu = true,
+	stickl = true,
+	stickr = true,
+	sticklc = true,
+	stickrc = true,
+	triggerl = true,
+	triggerr = true,
+	bumperl = true,
+	bumperr = true,
+	back = true,
+	start = true,
+	dpadd = true,
+	dpadl = true,
+	dpadr = true,
+	dpadu = true,
+--]] 
+
+	ps4_button_logo_lg =  true,
+	ps4_button_options_lg =  true,
+	ps4_button_share_lg =  true,
+	ps4_l1_lg =  true,
+	ps4_l2_lg =  true,
+	ps4_r1_lg =  true,
+	ps4_r2_lg =  true,
+	ps4_trackpad_click_lg =  true,
+	ps4_trackpad_down_lg =  true,
+	ps4_trackpad_l_click_lg =  true,
+	ps4_trackpad_l_down_lg =  true,
+	ps4_trackpad_l_left_lg =  true,
+	ps4_trackpad_l_right_lg =  true,
+	ps4_trackpad_l_ring_lg =  true,
+	ps4_trackpad_l_swipe_lg =  true,
+	ps4_trackpad_l_touch_lg =  true,
+	ps4_trackpad_l_up_lg =  true,
+	ps4_trackpad_left_lg =  true,
+	ps4_trackpad_lg =  true,
+	ps4_trackpad_r_click_lg =  true,
+	ps4_trackpad_r_down_lg =  true,
+	ps4_trackpad_r_left_lg =  true,
+	ps4_trackpad_r_right_lg =  true,
+	ps4_trackpad_r_ring_lg =  true,
+	ps4_trackpad_r_swipe_lg =  true,
+	ps4_trackpad_r_touch_lg =  true,
+	ps4_trackpad_r_up_lg =  true,
+	ps4_trackpad_right_lg =  true,
+	ps4_trackpad_ring_lg =  true,
+	ps4_trackpad_swipe_lg =  true,
+	ps4_trackpad_up_lg =  true,
+	ps5_button_create_lg =  true,
+	ps5_button_options_lg =  true,
+	ps5_l1_lg =  true,
+	ps5_l2_lg =  true,
+	ps5_r1_lg =  true,
+	ps5_r2_lg =  true,
+	ps5_trackpad_click_lg =  true,
+	ps5_trackpad_down_lg =  true,
+	ps5_trackpad_l_click_lg =  true,
+	ps5_trackpad_l_down_lg =  true,
+	ps5_trackpad_l_left_lg =  true,
+	ps5_trackpad_l_right_lg =  true,
+	ps5_trackpad_l_ring_lg =  true,
+	ps5_trackpad_l_swipe_lg =  true,
+	ps5_trackpad_l_touch_lg =  true,
+	ps5_trackpad_l_up_lg =  true,
+	ps5_trackpad_left_lg =  true,
+	ps5_trackpad_lg =  true,
+	ps5_trackpad_r_click_lg =  true,
+	ps5_trackpad_r_down_lg =  true,
+	ps5_trackpad_r_left_lg =  true,
+	ps5_trackpad_r_right_lg =  true,
+	ps5_trackpad_r_ring_lg =  true,
+	ps5_trackpad_r_swipe_lg =  true,
+	ps5_trackpad_r_touch_lg =  true,
+	ps5_trackpad_r_up_lg =  true,
+	ps5_trackpad_right_lg =  true,
+	ps5_trackpad_ring_lg =  true,
+	ps5_trackpad_swipe_lg =  true,
+	ps5_trackpad_up_lg =  true,
+	ps_button_circle_lg =  true,
+	ps_button_mute_lg =  true,
+	ps_button_square_lg =  true,
+	ps_button_triangle_lg =  true,
+	ps_button_x_lg =  true,
+	ps_color_button_circle_lg =  true,
+	ps_color_button_square_lg =  true,
+	ps_color_button_triangle_lg =  true,
+	ps_color_button_x_lg =  true,
+	ps_color_outlined_button_circle_lg =  true,
+	ps_color_outlined_button_square_lg =  true,
+	ps_color_outlined_button_triangle_lg =  true,
+	ps_color_outlined_button_x_lg =  true,
+	ps_dpad_down_lg =  true,
+	ps_dpad_left_lg =  true,
+	ps_dpad_lg =  true,
+	ps_dpad_right_lg =  true,
+	ps_dpad_up_lg =  true,
+	ps_outlined_button_circle_lg =  true,
+	ps_outlined_button_square_lg =  true,
+	ps_outlined_button_triangle_lg =  true,
+	ps_outlined_button_x_lg =  true,
+	sc_button_l_arrow_lg =  true,
+	sc_button_r_arrow_lg =  true,
+	sc_button_steam_lg =  true,
+	sc_dpad_click_lg =  true,
+	sc_dpad_down_lg =  true,
+	sc_dpad_left_lg =  true,
+	sc_dpad_lg =  true,
+	sc_dpad_right_lg =  true,
+	sc_dpad_swipe_lg =  true,
+	sc_dpad_touch_lg =  true,
+	sc_dpad_up_lg =  true,
+	sc_lb_lg =  true,
+	sc_lg_lg =  true,
+	sc_lt_click_lg =  true,
+	sc_lt_lg =  true,
+	sc_rb_lg =  true,
+	sc_rg_lg =  true,
+	sc_rt_click_lg =  true,
+	sc_rt_lg =  true,
+	sc_touchpad_click_lg =  true,
+	sc_touchpad_down_lg =  true,
+	sc_touchpad_edge_lg =  true,
+	sc_touchpad_left_lg =  true,
+	sc_touchpad_lg =  true,
+	sc_touchpad_right_lg =  true,
+	sc_touchpad_swipe_lg =  true,
+	sc_touchpad_touch_lg =  true,
+	sc_touchpad_up_lg =  true,
+	sd_button_aux_lg =  true,
+	sd_button_menu_lg =  true,
+	sd_button_steam_lg =  true,
+	sd_button_view_lg =  true,
+	sd_l1_lg =  true,
+	sd_l2_half_lg =  true,
+	sd_l2_lg =  true,
+	sd_l4_lg =  true,
+	sd_l5_lg =  true,
+	sd_ltrackpad_click_lg =  true,
+	sd_ltrackpad_down_lg =  true,
+	sd_ltrackpad_left_lg =  true,
+	sd_ltrackpad_lg =  true,
+	sd_ltrackpad_right_lg =  true,
+	sd_ltrackpad_ring_lg =  true,
+	sd_ltrackpad_swipe_lg =  true,
+	sd_ltrackpad_up_lg =  true,
+	sd_r1_lg =  true,
+	sd_r2_half_lg =  true,
+	sd_r2_lg =  true,
+	sd_r4_lg =  true,
+	sd_r5_lg =  true,
+	sd_rtrackpad_click_lg =  true,
+	sd_rtrackpad_down_lg =  true,
+	sd_rtrackpad_left_lg =  true,
+	sd_rtrackpad_lg =  true,
+	sd_rtrackpad_right_lg =  true,
+	sd_rtrackpad_ring_lg =  true,
+	sd_rtrackpad_swipe_lg =  true,
+	sd_rtrackpad_up_lg =  true,
+	shared_button_a_lg =  true,
+	shared_button_b_lg =  true,
+	shared_button_x_lg =  true,
+	shared_button_y_lg =  true,
+	shared_buttons_e_lg =  true,
+	shared_buttons_n_lg =  true,
+	shared_buttons_s_lg =  true,
+	shared_buttons_w_lg =  true,
+	shared_color_button_a_lg =  true,
+	shared_color_button_b_lg =  true,
+	shared_color_button_x_lg =  true,
+	shared_color_button_y_lg =  true,
+	shared_color_outlined_button_a_lg =  true,
+	shared_color_outlined_button_b_lg =  true,
+	shared_color_outlined_button_x_lg =  true,
+	shared_color_outlined_button_y_lg =  true,
+	shared_dpad_down_lg =  true,
+	shared_dpad_left_lg =  true,
+	shared_dpad_lg =  true,
+	shared_dpad_right_lg =  true,
+	shared_dpad_up_lg =  true,
+	shared_gyro_lg =  true,
+	shared_gyro_pitch_lg =  true,
+	shared_gyro_roll_lg =  true,
+	shared_gyro_yaw_lg =  true,
+	shared_l3_lg =  true,
+	shared_lstick_click_lg =  true,
+	shared_lstick_down_lg =  true,
+	shared_lstick_left_lg =  true,
+	shared_lstick_lg =  true,
+	shared_lstick_right_lg =  true,
+	shared_lstick_touch_lg =  true,
+	shared_lstick_up_lg =  true,
+	shared_mouse_4_lg =  true,
+	shared_mouse_5_lg =  true,
+	shared_mouse_l_click_lg =  true,
+	shared_mouse_mid_click_lg =  true,
+	shared_mouse_r_click_lg =  true,
+	shared_mouse_scroll_down_lg =  true,
+	shared_mouse_scroll_up_lg =  true,
+	shared_outlined_button_a_lg =  true,
+	shared_outlined_button_b_lg =  true,
+	shared_outlined_button_x_lg =  true,
+	shared_outlined_button_y_lg =  true,
+	shared_r3_lg =  true,
+	shared_rstick_click_lg =  true,
+	shared_rstick_down_lg =  true,
+	shared_rstick_left_lg =  true,
+	shared_rstick_lg =  true,
+	shared_rstick_right_lg =  true,
+	shared_rstick_touch_lg =  true,
+	shared_rstick_up_lg =  true,
+	switchpro_button_capture_lg =  true,
+	switchpro_button_home_lg =  true,
+	switchpro_button_minus_lg =  true,
+	switchpro_button_plus_lg =  true,
+	switchpro_dpad_down_lg =  true,
+	switchpro_dpad_left_lg =  true,
+	switchpro_dpad_lg =  true,
+	switchpro_dpad_right_lg =  true,
+	switchpro_dpad_up_lg =  true,
+	switchpro_l2_lg =  true,
+	switchpro_l_lg =  true,
+	switchpro_lstick_click_lg =  true,
+	switchpro_lstick_down_lg =  true,
+	switchpro_lstick_left_lg =  true,
+	switchpro_lstick_lg =  true,
+	switchpro_lstick_right_lg =  true,
+	switchpro_lstick_up_lg =  true,
+	switchpro_r2_lg =  true,
+	switchpro_r_lg =  true,
+	switchpro_rstick_click_lg =  true,
+	switchpro_rstick_down_lg =  true,
+	switchpro_rstick_left_lg =  true,
+	switchpro_rstick_lg =  true,
+	switchpro_rstick_right_lg =  true,
+	switchpro_rstick_up_lg =  true,
+	xbox360_button_select_lg =  true,
+	xbox360_button_start_lg =  true,
+	xbox_button_logo_lg =  true,
+	xbox_button_select_lg =  true,
+	xbox_button_share_lg =  true,
+	xbox_button_start_lg =  true,
+	xbox_lb_lg =  true,
+	xbox_lt_lg =  true,
+	xbox_p1_lg =  true,
+	xbox_p2_lg =  true,
+	xbox_p3_lg =  true,
+	xbox_p4_lg =  true,
+	xbox_rb_lg =  true,
+	xbox_rt_lg =  true,
+
 }
 
 surface.CreateFont( "ARC9_KeybindPreview", {
-	font = "Arial",
-	size = 16,
-	weight = 600,
-	antialias = false,
+    font = "Arial",
+    size = 16,
+    weight = 600,
+    antialias = false,
 } )
 
 --[[
@@ -1751,7 +1739,7 @@ function CreateControllerKeyLine( info, ... )
             else
                 -- Draw a controller input.
                 surface.SetMaterial(v[1])
-                surface.DrawTexturedRect( info.x + strlength, info.y - ((size - info.size)*0.5), size, size )
+                surface.DrawTexturedRect( info.x + strlength, info.y - ((size - info.size)*0), size * 1.25, size * 1.25 )
                 strlength = strlength + size
             end
         end
@@ -1793,22 +1781,47 @@ function ARC9MultiLineText(text, maxw, font)
     local x = 0
     surface.SetFont(font)
 
+    local ts = surface.GetTextSize(" ")
+
     local newlined = string.Split(text, "\n")
 
     for _, line in ipairs(newlined) do
         local words = string.Split(line, " ")
 
+        -- Keep track of the current color tag across lines
+        local active_color_tag = nil
+
         for _, word in ipairs(words) do
             local tx = surface.GetTextSize(word)
 
+            -- Don't count color tags for length purposes
+            local match = {string.match(word, "<color=%d+,%d+,%d+>")}
+            local matchend = {string.match(word, "</color>")}
+            
+            local matchfont = {string.match(word, "<font=([^>]+)>")}
+            local matchfontend = {string.match(word, "</font>")}
+            
+            for _, v in ipairs(match) do
+                tx = tx - surface.GetTextSize(v)
+            end
+            for _, v in ipairs(matchend) do
+                tx = tx - surface.GetTextSize(v)
+            end
+
+            for _, v in ipairs(matchfont) do
+                tx = tx - surface.GetTextSize(v)
+            end
+            for _, v in ipairs(matchfontend) do
+                tx = tx - surface.GetTextSize(v)
+            end
+
+            -- if #match + #matchend > 0 then
+            --     print(word, table.ToString(match), table.ToString(matchend))
+            -- end
+
             if x + tx > maxw then
                 local dashi = string.find(word, "-")
-                if maxw - x <= maxw * 0.25 then
-                    -- move whole word to new line if blank space is not very large
-                    table.insert(content, tline)
-                    tline = ""
-                    x = 0
-                elseif dashi and surface.GetTextSize(utf8.sub(word, 0, dashi)) <= maxw - x then
+                if dashi and surface.GetTextSize(utf8.sub(word, 0, dashi)) <= maxw - x then
                     -- cut the word at the dash sign if possible
                     table.insert(content, tline .. utf8.sub(word, 0, dashi))
                     tline = ""
@@ -1816,28 +1829,49 @@ function ARC9MultiLineText(text, maxw, font)
                     word = utf8.sub(word, dashi + 1)
                     tx = surface.GetTextSize(word)
                 else
-                    -- cut the word down from the middle
-                    while x + tx > maxw do
-                        local cut = ""
-                        for i = 2, utf8.len(word) do
-                            cut = utf8.sub(word, 0, -i)
-                            tx = surface.GetTextSize(cut)
-                            if x + tx < maxw then
-                                table.insert(content, tline .. cut)
-                                tline = ""
-                                word = utf8.sub(word, utf8.len(word) - i + 2)
-                                x = 0
-                                tx = surface.GetTextSize(word)
-                                break
-                            end
-                        end
+                    -- move whole word to new line
+
+                    -- close color tag
+                    if active_color_tag != nil then
+                        tline = tline .. "</color>"
                     end
+
+                    table.insert(content, tline)
+                    tline = ""
+                    x = 0
+
+                    -- reopen color tag
+                    if active_color_tag != nil then
+                        tline = tline .. active_color_tag
+                    end
+                end
+            end
+
+            -- Check the status of the color tag at the end of current word
+            if math.abs(#match - #matchend) > 1 then
+                ErrorNoHalt("<color> tag miscount!\n")
+            elseif #match > #matchend then
+                if active_color_tag != nil then
+                    ErrorNoHalt("<color> tag miscount (too many opening tags)!\n")
+                else
+                    active_color_tag = match[#match]
+                end
+            elseif #matchend > #match then
+                if active_color_tag == nil then
+                    ErrorNoHalt("<color> tag miscount (too many closing tags)!\n")
+                else
+                    active_color_tag = nil
                 end
             end
 
             tline = tline .. word .. " "
 
-            x = x + surface.GetTextSize(word .. " ")
+            x = x + tx + ts
+        end
+
+        -- close color tag
+        if active_color_tag != nil then
+            tline = tline .. "</color>"
         end
 
         table.insert(content, tline)
@@ -1876,7 +1910,7 @@ function ARC9.DrawTextRot(span, txt, x, y, tx, ty, maxw, only)
                     span.TextRotState = 1
                 end
             elseif span.TextRotState == 1 then
-                span.TextRot[txt] = span.TextRot[txt] + (FrameTime() * ARC9ScreenScale(16))
+                span.TextRot[txt] = span.TextRot[txt] + (FrameTime() * ARC9ScreenScale(32))
                 if span.TextRot[txt] >= (tw - maxw) + ARC9ScreenScale(8) then
                     span.StartTextRot = CurTime()
                     span.TextRotState = 2
@@ -1887,7 +1921,7 @@ function ARC9.DrawTextRot(span, txt, x, y, tx, ty, maxw, only)
                     span.StartTextRot = CurTime()
                 end
             elseif span.TextRotState == 3 then
-                span.TextRot[txt] = span.TextRot[txt] - (FrameTime() * ARC9ScreenScale(16))
+                span.TextRot[txt] = span.TextRot[txt] - (FrameTime() * ARC9ScreenScale(32))
                 if span.TextRot[txt] <= 0 then
                     span.StartTextRot = CurTime()
                     span.TextRotState = 0
@@ -1902,269 +1936,3 @@ function ARC9.DrawTextRot(span, txt, x, y, tx, ty, maxw, only)
         surface.DrawText(txt)
     end
 end
---[[
-
-ps4
-	button_logo
-	button_options
-	button_share
-	l1
-	l2
-	l2_soft
-	r1
-	r2
-	r2_soft
-	trackpad_click
-	trackpad_down
-	trackpad_l_click
-	trackpad_l_down
-	trackpad_l_left
-	trackpad_l_right
-	trackpad_l_ring
-	trackpad_l_swipe
-	trackpad_l_touch
-	trackpad_l_up
-	trackpad_left
-	trackpad
-	trackpad_r_click
-	trackpad_r_down
-	trackpad_r_left
-	trackpad_r_right
-	trackpad_r_ring
-	trackpad_r_swipe
-	trackpad_r_touch
-	trackpad_r_up
-	trackpad_right
-	trackpad_ring
-	trackpad_swipe
-	trackpad_up
-
-ps5
-	button_create
-	button_options
-	l1
-	l2
-	l2_soft
-	r1
-	r2
-	r2_soft
-	trackpad_click
-	trackpad_down
-	trackpad_l_click
-	trackpad_l_down
-	trackpad_l_left
-	trackpad_l_right
-	trackpad_l_ring
-	trackpad_l_swipe
-	trackpad_l_touch
-	trackpad_l_up
-	trackpad_left
-	trackpad
-	trackpad_r_click
-	trackpad_r_down
-	trackpad_r_left
-	trackpad_r_right
-	trackpad_r_ring
-	trackpad_r_swipe
-	trackpad_r_touch
-	trackpad_r_up
-	trackpad_right
-	trackpad_ring
-	trackpad_swipe
-	trackpad_up
-
-ps
-	button_circle
-	button_mute
-	button_square
-	button_triangle
-	button_x
-	color_button_circle
-	color_button_square
-	color_button_triangle
-	color_button_x
-	color_outlined_button_circle
-	color_outlined_button_square
-	color_outlined_button_triangle
-	color_outlined_button_x
-	dpad_down
-	dpad_left
-	dpad
-	dpad_right
-	dpad_up
-	outlined_button_circle
-	outlined_button_square
-	outlined_button_triangle
-	outlined_button_x
-
-sc
-	button_l_arrow
-	button_r_arrow
-	button_steam
-	dpad_click
-	dpad_down
-	dpad_left
-	dpad
-	dpad_right
-	dpad_swipe
-	dpad_touch
-	dpad_up
-	lb
-	lg
-	lt_click
-	lt
-	lt_soft
-	rb
-	rg
-	rt_click
-	rt
-	rt_soft
-	touchpad_click
-	touchpad_down
-	touchpad_edge
-	touchpad_left
-	touchpad
-	touchpad_right
-	touchpad_swipe
-	touchpad_touch
-	touchpad_up
-
-sd
-	button_aux
-	button_menu
-	button_steam
-	button_view
-	l1
-	l2_half
-	l2
-	l4
-	l5
-	ltrackpad_click
-	ltrackpad_down
-	ltrackpad_left
-	ltrackpad
-	ltrackpad_right
-	ltrackpad_ring
-	ltrackpad_swipe
-	ltrackpad_up
-	r1
-	r2_half
-	r2
-	r4
-	r5
-	rtrackpad_click
-	rtrackpad_down
-	rtrackpad_left
-	rtrackpad
-	rtrackpad_right
-	rtrackpad_ring
-	rtrackpad_swipe
-	rtrackpad_up
-
-shared
-	button_a
-	button_b
-	button_x
-	button_y
-	buttons_e
-	buttons_n
-	buttons_s
-	buttons_w
-	color_button_a
-	color_button_b
-	color_button_x
-	color_button_y
-	color_outlined_button_a
-	color_outlined_button_b
-	color_outlined_button_x
-	color_outlined_button_y
-	dpad_down
-	dpad_left
-	dpad
-	dpad_right
-	dpad_up
-	gyro
-	gyro_pitch
-	gyro_roll
-	gyro_yaw
-	l3
-	lstick_click
-	lstick_down
-	lstick_left
-	lstick
-	lstick_right
-	lstick_touch
-	lstick_up
-	mouse_4
-	mouse_5
-	mouse_l_click
-	mouse_mid_click
-	mouse_r_click
-	mouse_scroll_down
-	mouse_scroll_up
-	outlined_button_a
-	outlined_button_b
-	outlined_button_x
-	outlined_button_y
-	r3
-	rstick_click
-	rstick_down
-	rstick_left
-	rstick
-	rstick_right
-	rstick_touch
-	rstick_up
-	touch_doubletap
-	touch
-	touch_tap
-
-switchpro
-	button_capture
-	button_home
-	button_minus
-	button_plus
-	dpad_down
-	dpad_left
-	dpad
-	dpad_right
-	dpad_up
-	l2
-	l2_soft
-	l
-	lstick_click
-	lstick_down
-	lstick_left
-	lstick
-	lstick_right
-	lstick_up
-	r2
-	r2_soft
-	r
-	rstick_click
-	rstick_down
-	rstick_left
-	rstick
-	rstick_right
-	rstick_up
-
-xbox360
-	button_select
-	button_start
-
-xbox
-	button_logo
-	button_select
-	button_share
-	button_start
-	lb
-	lt
-	lt_soft
-	p1
-	p2
-	p3
-	p4
-	rb
-	rt
-	rt_soft
-
-]]

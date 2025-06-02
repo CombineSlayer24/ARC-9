@@ -1,12 +1,13 @@
 L = {}
 
--- Folders
+//////// Folders
 L["folder.arc9"] = "ARC9"
-L["folder.arc9.community"] = "Commuwnity"
+L["folder.arc9.community"] = "ARC9/Commuwnity"
+L["folder.arc9.dovesinternational"] = "ARC9/Doves International"
 
 L["attachment.sticker"] = "Stickew"
 
--- Flat Camo
+//////// Flat Camo
 L["camo_arc9_base_flat_od.printname"] = "Owiwe Dwab"
 L["camo_arc9_base_flat_od.compactname"] = "OD"
 L["camo_arc9_base_flat_od.description"] = "Stwandawt Owiwe Dwab camowowage"
@@ -43,7 +44,7 @@ L["camo_arc9_base_flat_fde.printname"] = "Fwat Dawk Eawh"
 L["camo_arc9_base_flat_fde.compactname"] = "FDE >w<"
 L["camo_arc9_base_flat_fde.description"] = "Stwandawt Fwat Dawk Eawh camowowage"
 
--- Flat Colour
+//////// Flat Colour
 L["camo_arc9_base_flat_red.printname"] = "Wed"
 L["camo_arc9_base_flat_red.compactname"] = "Wed"
 L["camo_arc9_base_flat_red.description"] = "Bawasic wed cowow"
@@ -76,7 +77,7 @@ L["camo_arc9_base_flat_arc9orange.printname"] = "AWC9 Owange"
 L["camo_arc9_base_flat_arc9orange.compactname"] = "AWC9 Owange"
 L["camo_arc9_base_flat_arc9orange.description"] = "De pewwekt shawade of owange fow that cUwUte witle AWC9 Wogo stwickew"
 
--- Charms
+//////// Charms
 L["charm_gs_killcounter.printname"] = "Kiww Counter"
 L["charm_gs_killcounter.compactname"] = "Kiww!!!"
 L["charm_gs_killcounter.description"] = "Dewice for twacking ur owoweapon kiww stwats"
@@ -89,7 +90,7 @@ L["charm_gs_sticker.printname"] = "Stickew Pawnel"
 L["charm_gs_sticker.compactname"] = "STICKEW"
 L["charm_gs_sticker.description"] = "Dewice that awows a custom stickew to be aplied onto its scween."
 
--- Stickers, Base
+//////// Stickers, Base
 L["sticker_spray.printname"] = "Playew Spway"
 L["sticker_spray.compactname"] = "Spway"
 L["sticker_spray.description"] = [[Youw own spway as a stickew!
@@ -130,7 +131,7 @@ desiwgn bwy Darsuw.
 
 stikew incwuded in de AWC9 base]]
 
--- Stickers, Com. Wave 1
+//////// Stickers, Com. Wave 1
 L["sticker_alien_lean.printname"] = "Wegawize Alien Wean"
 L["sticker_alien_lean.compactname"] = "Awien wean"
 L["sticker_alien_lean.description"] = [[Hop dow to Agawtha wit de wite boys fow a cup of awien wean and... odew things.
@@ -275,5 +276,174 @@ L["sticker_arcbird.printname"] = "Awc Biwb"
 L["sticker_arcbird.compactname"] = "Awc Biwb"
 L["sticker_arcbird.description"] = [[Awc Biwb.
 desiwgn bwy Nowi/Chewable.
+
+stikew incwuded in de AWC9 base]]
+
+//////// Stickers, International
+L["sticker_dovesinternational_arc9.printname"] = "Doves International - ARC9"
+L["sticker_dovesinternational_arc9.compactname"] = "DI ARC9"
+L["sticker_dovesinternational_arc9.description"] = [[Doves International logo in the ARC9 color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_arctic.printname"] = "Doves International - Arctic"
+L["sticker_dovesinternational_arctic.compactname"] = "DI Arctic"
+L["sticker_dovesinternational_arctic.description"] = [[Doves International logo in an arctic white color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_black.printname"] = "Doves International - Black"
+L["sticker_dovesinternational_black.compactname"] = "DI Black"
+L["sticker_dovesinternational_black.description"] = [[Doves International logo in a black color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_blackblue.printname"] = "Doves International - Black & Blue"
+L["sticker_dovesinternational_blackblue.compactname"] = "DI Bla. & Blu."
+L["sticker_dovesinternational_blackblue.description"] = [[Doves International logo in a black & blue color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_blackgreen.printname"] = "Doves International - Black & Green"
+L["sticker_dovesinternational_blackgreen.compactname"] = "DI Bla. & Gre."
+L["sticker_dovesinternational_blackgreen.description"] = [[Doves International logo in a black & green color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_blacktan.printname"] = "Doves International - Black & Tan"
+L["sticker_dovesinternational_blacktan.compactname"] = "DI Bla. & Tan"
+L["sticker_dovesinternational_blacktan.description"] = [[Doves International logo in a black & tan color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_blacktrans.printname"] = "Doves International - Transparent Black"
+L["sticker_dovesinternational_blacktrans.compactname"] = "DI T. Black"
+L["sticker_dovesinternational_blacktrans.description"] = [[Doves International logo in a transparent, monochromatic black color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_blue.printname"] = "Doves International - Blue"
+L["sticker_dovesinternational_blue.compactname"] = "DI Blue"
+L["sticker_dovesinternational_blue.description"] = [[Doves International logo in a blue color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_bronze.printname"] = "Doves International - Bronze"
+L["sticker_dovesinternational_bronze.compactname"] = "DI Bronze"
+L["sticker_dovesinternational_bronze.description"] = [[Doves International logo in a bronze color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_dovesinternational.printname"] = "Doves International"
+L["sticker_dovesinternational_dovesinternational.compactname"] = "DI"
+L["sticker_dovesinternational_dovesinternational.description"] = [[Doves International logo in its default color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_error.printname"] = "Doves International - ERROR"
+L["sticker_dovesinternational_error.compactname"] = "DI ERROR"
+L["sticker_dovesinternational_error.description"] = [[Doves International logo in a missing textures color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_fox.printname"] = "Doves International - FOXHOUND"
+L["sticker_dovesinternational_fox.compactname"] = "DI FOXHOUND"
+L["sticker_dovesinternational_fox.description"] = [[Doves International logo in a color scheme resembling a certain special forces unit.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_fullcolor.printname"] = "Doves International - Full Color"
+L["sticker_dovesinternational_fullcolor.compactname"] = "DI Full Col."
+L["sticker_dovesinternational_fullcolor.description"] = [[Doves International logo in full color.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_green.printname"] = "Doves International - Green"
+L["sticker_dovesinternational_green.compactname"] = "DI Green"
+L["sticker_dovesinternational_green.description"] = [[Doves International logo in a green color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_grey.printname"] = "Doves International - Grey"
+L["sticker_dovesinternational_grey.compactname"] = "DI Grey"
+L["sticker_dovesinternational_grey.description"] = [[Doves International logo in a grey color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_monochrome.printname"] = "Doves International - Monochrome"
+L["sticker_dovesinternational_monochrome.compactname"] = "DI Mono."
+L["sticker_dovesinternational_monochrome.description"] = [[Doves International logo in a monochrome black & white color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_navytan.printname"] = "Doves International - Navy & Tan"
+L["sticker_dovesinternational_navytan.compactname"] = "DI Navy & Tan"
+L["sticker_dovesinternational_navytan.description"] = [[Doves International logo in a navy blue & tan color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_pink.printname"] = "Doves International - Pink"
+L["sticker_dovesinternational_pink.compactname"] = "DI Pink"
+L["sticker_dovesinternational_pink.description"] = [[Doves International logo in a pink color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_purple.printname"] = "Doves International - Purple"
+L["sticker_dovesinternational_purple.compactname"] = "DI Purple"
+L["sticker_dovesinternational_purple.description"] = [[Doves International logo in a purple color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_tan.printname"] = "Doves International - Tan"
+L["sticker_dovesinternational_tan.compactname"] = "DI Tan"
+L["sticker_dovesinternational_tan.description"] = [[Doves International logo in a tan color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_teal.printname"] = "Doves International - Teal & Purple"
+L["sticker_dovesinternational_teal.compactname"] = "DI Teal & Pur."
+L["sticker_dovesinternational_teal.description"] = [[Doves International logo in a teal & purple color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_trans.printname"] = "Doves International - Trans Pride"
+L["sticker_dovesinternational_trans.compactname"] = "DI Trans."
+L["sticker_dovesinternational_trans.description"] = [[Doves International logo in a color scheme resembling the Transgender Pride Flag.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_white.printname"] = "Doves International - White"
+L["sticker_dovesinternational_white.compactname"] = "DI White"
+L["sticker_dovesinternational_white.description"] = [[Doves International logo in a white color scheme.
+desiwgn bwy M541/Neosun.
+
+stikew incwuded in de AWC9 base]]
+
+L["sticker_dovesinternational_whitetrans.printname"] = "Doves International - Transparent White"
+L["sticker_dovesinternational_whitetrans.compactname"] = "DI T. White"
+L["sticker_dovesinternational_whitetrans.description"] = [[Doves International logo in a transparent, monochromatic white color scheme.
+desiwgn bwy M541/Neosun.
 
 stikew incwuded in de AWC9 base]]

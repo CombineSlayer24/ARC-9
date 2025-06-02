@@ -1,6 +1,7 @@
 
 function SWEP:OnReloaded()
     self:InvalidateCache()
+    timer.Simple(0.1, function() self.CustomizeButtons = table.Copy(self.CustomizeButtonsOriginal) end)
 end
 
 local arc9_precache_sounds_onfirsttake = GetConVar("arc9_precache_sounds_onfirsttake")
@@ -42,6 +43,11 @@ function SWEP:Initialize()
 
     if !IsValid(owner) then -- player is nil here sometimes
         self:PostModify()
+        timer.Simple(0.1, function() 
+            if IsValid(self) and !IsValid(self:GetOwner()) then -- still invalid?
+                self:NoOwner_Initialize()
+            end
+        end)
     end
 
     self.LastClipSize = self:GetProcessedValue("ClipSize")
@@ -50,7 +56,7 @@ function SWEP:Initialize()
 
     local bottomless = self:GetProcessedValue("BottomlessClip", true)
     local clip = bottomless and self:GetProcessedValue("AmmoPerShot") or self.LastClipSize
-    self.Primary.DefaultClip = clip + (bottomless and 0 or (self:GetProcessedValue("ChamberSize") or 0))
+    self.Primary.DefaultClip = self.ForceDefaultClip or (clip + (bottomless and 0 or (self:GetProcessedValue("ChamberSize") or 0)))
     -- self.Primary.DefaultClip = clip * math.max(1, self:GetProcessedValue("SupplyLimit") + (bottomless and 0 or 1))
 
     if self.Primary.DefaultClip == 1 then -- This specific value seems to be hard-coded to not give any ammo?
@@ -90,7 +96,7 @@ function SWEP:Initialize()
 end
 
 function SWEP:ClientInitialize()
-    if game.SinglePlayer() then self:CallOnClient("ClientInitialize") end
+    if game.SinglePlayer() and self:GetOwner():IsPlayer() then self:CallOnClient("ClientInitialize") end
     if SERVER then return end
 
     -- local base = baseclass.Get(self:GetClass())
@@ -112,83 +118,40 @@ function SWEP:ClientInitialize()
         self:CreateStandardPresets()
     end
 
-    if LocalPlayer().ARC9_IncompatibilityCheck != true and game.SinglePlayer() then
-        LocalPlayer().ARC9_IncompatibilityCheck = true
+    -- if LocalPlayer().ARC9_IncompatibilityCheck != true then
+    --     LocalPlayer().ARC9_IncompatibilityCheck = true
 
-        ARC9.DoCompatibilityCheck()
-    end
+    --     ARC9.DoCompatibilityCheck()
+    -- end
 end
 
-do
-    local _R = debug.getregistry()
-    local ENTITY = _R.Entity
-    local entityGetOwner = ENTITY.GetOwner
-
-    local METATABLE = setmetatable(table.Copy(_R.Weapon), {__index = ENTITY})
-    local EntTabMT = {__index = METATABLE}
-
-    local copyKeys = {"MetaID","MetaName","__tostring","__eq","__concat"}
-    local copyKeysLength = #copyKeys
-
-    local function CopyMetatable(ent)
-        local tab = ent:GetTable()
-        setmetatable(tab, EntTabMT)
-
-        local mt = {
-            __index = function(self, key)
-                -- we still have to take care of these idiots
-                if key == "Owner" then
-                    return entityGetOwner(self, key)
-                end
-
-                return tab[key]
-            end,
-            __newindex = tab,
-            __metatable = ENTITY
-        }
-
-        for i = 1, copyKeysLength do
-            local v = copyKeys[i]
-            mt[v] = ENTITY[v]
-        end
-
-        debug.setmetatable(ent, mt)
+function SWEP:SetBaseSettings()
+    if game.SinglePlayer() and self:GetOwner():IsPlayer() and SERVER then
+        self:CallOnClient("SetBaseSettings")
     end
 
-    function SWEP:SetBaseSettings()
-        if game.SinglePlayer() and SERVER then
-            self:CallOnClient("SetBaseSettings")
-        end
+    self.Primary.Automatic = true
+    self.Secondary.Automatic = true
 
-        self.Primary.Automatic = true
-        self.Secondary.Automatic = true
+    self.Primary.ClipSize = self:GetValue("ClipSize")
+    self.Primary.Ammo = self:GetValue("Ammo")
 
-        self.Primary.ClipSize = self:GetValue("ClipSize")
-        self.Primary.Ammo = self:GetValue("Ammo")
+    self.Primary.DefaultClip = self.ForceDefaultClip or self.Primary.ClipSize
 
-        self.Primary.DefaultClip = self.Primary.ClipSize
+    if self:GetValue("UBGL") then
+        self.Secondary.ClipSize = self:GetValue("UBGLClipSize")
+        self.Secondary.Ammo = self:GetValue("UBGLAmmo")
 
-        if self:GetValue("UBGL") then
-            self.Secondary.ClipSize = self:GetValue("UBGLClipSize")
-            self.Secondary.Ammo = self:GetValue("UBGLAmmo")
-
-            if SERVER then
-                if self:Clip2() < 0 then
-                    self:SetClip2(0)
-                end
+        if SERVER then
+            if self:Clip2() < 0 then
+                self:SetClip2(0)
             end
-        else
-            self.Secondary.ClipSize = -1
-            self.Secondary.Ammo = nil
-
-            self:SetUBGL(false)
         end
+    else
+        self.Secondary.ClipSize = -1
+        self.Secondary.Ammo = nil
 
-        timer.Simple(0, function()
-            if IsValid(self) then
-                CopyMetatable(self)
-            end
-        end)
+        self:SetUBGL(false)
     end
 end
 
@@ -249,6 +212,12 @@ function SWEP:OnDrop()
     self:KillShield()
     self:InvalidateCache()
     self:SetReady(false)
+end
+
+function SWEP:OwnerChanged()
+    if CLIENT then
+        self:SetupModel(true) -- setups worldmodel offset properly
+    end
 end
 
 function SWEP:OnRemove()

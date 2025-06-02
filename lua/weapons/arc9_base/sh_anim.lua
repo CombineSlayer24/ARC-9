@@ -1,9 +1,10 @@
-function SWEP:PlayAnimation(anim, mult, lock, delayidle, noproxy, notranslate)
+function SWEP:PlayAnimation(anim, mult, lock, delayidle, noproxy, notranslate, noidle)
     mult = mult or 1
     lock = lock or false
     local untranslatedanim = anim
     anim = (notranslate == true) and anim or self:TranslateAnimation(anim)
     mult = self:RunHook("Hook_TranslateAnimSpeed", {mult = mult, anim = anim}).Mult or mult
+    local omult = mult
 
     if !self:HasAnimation(anim) then return 0, 1 end
 
@@ -106,7 +107,7 @@ function SWEP:PlayAnimation(anim, mult, lock, delayidle, noproxy, notranslate)
         if animation.EjectAt then
             self:SetTimer(animation.EjectAt * mult, function()
                 self:DoEject()
-            end)
+            end, "ejectat")
         end
 
         if animation.DropMagAt then
@@ -142,21 +143,24 @@ function SWEP:PlayAnimation(anim, mult, lock, delayidle, noproxy, notranslate)
     self:KillSoundTable()
 
     if (animation.EventTable or animation.SoundTable) and IsFirstTimePredicted() then
-        self:PlaySoundTable(animation.EventTable or animation.SoundTable, mult)
+        -- This additional Mult check is necessary because mdl isn't valid above on the client and so the EventTable is off-sync.
+        self:PlaySoundTable(animation.EventTable or animation.SoundTable, omult * (animation.Mult or 1))
     end
 
     self:SetHideBoneIndex(animation.HideBoneIndex or 0)
 
     if lock then
-        if !animation.FireASAP then minprogress = 1 end
-
-        self:SetAnimLockTime(CurTime() + (time * mult * minprogress))
+        local minprogress2 = minprogress
+        if !animation.FireASAP then minprogress2 = 1 end
+        if isnumber(animation.FireASAP) then minprogress2 = animation.FireASAP end
+        
+        self:SetAnimLockTime(CurTime() + (time * mult * minprogress2))
     else
         self:SetAnimLockTime(CurTime())
     end
 
-    if !animation.NoIdle then
-        self:SetNextIdle(CurTime() + ((animation.DelayedIdle or (delayidle and !animation.InstantIdle)) and 0.25 or 0) + (time * mult))
+    if !noidle and !animation.NoIdle then
+        self:SetNextIdle(CurTime() + ((animation.DelayedIdle or (delayidle and !animation.InstantIdle)) and 0.325 or 0) + (time * mult))
     else
         self:SetNextIdle(math.huge)
     end

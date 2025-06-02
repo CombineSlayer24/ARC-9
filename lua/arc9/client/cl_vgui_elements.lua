@@ -4,6 +4,7 @@ local clicksound = "arc9/newui/uimouse_click_forward.ogg"
 local ARC9TopButton = {}
 ARC9TopButton.Color = ARC9.GetHUDColor("fg")
 ARC9TopButton.ColorClicked = ARC9.GetHUDColor("hi")
+ARC9TopButton.ColorNotif = Color(255, 50, 50)
 ARC9TopButton.Icon = Material("arc9/ui/settings.png", "mips")
 ARC9TopButton.MatIdle = Material("arc9/ui/topbutton.png", "mips")
 ARC9TopButton.MatHovered = Material("arc9/ui/topbutton_hover.png", "mips")
@@ -13,11 +14,34 @@ ARC9TopButton.MatIdleM = Material("arc9/ui/topbutton_m.png", "mips")
 ARC9TopButton.MatHoveredM = Material("arc9/ui/topbutton_hover_m.png", "mips")
 ARC9TopButton.MatIdleR = Material("arc9/ui/topbutton_r.png", "mips")
 ARC9TopButton.MatHoveredR = Material("arc9/ui/topbutton_hover_r.png", "mips")
+ARC9TopButton.MatNotif = Material("arc9/ui/info.png", "mips")
+
+local function syncconvar(self, val)
+
+    if LocalPlayer():IsAdmin() and ARC9.ShouldNetworkConVar(LocalPlayer(), self.m_strConVar) then
+        ARC9.NetworkConVar(self.m_strConVar, tostring(val))
+    else
+        if not self.m_strConVar or #self.m_strConVar < 2 then return end
+        RunConsoleCommand(self.m_strConVar, tostring(val))
+    end
+end
+
+local function syncconvardelayed(self, val)
+
+    if LocalPlayer():IsAdmin() and ARC9.ShouldNetworkConVar(LocalPlayer(), self.m_strConVar) then
+        timer.Create("cvarsend_" .. self.m_strConVar, 0.5, 1, function()
+            ARC9.NetworkConVar(self.m_strConVar, tostring(val))
+        end)
+    else
+        if not self.m_strConVar or #self.m_strConVar < 2 then return end
+        RunConsoleCommand(self.m_strConVar, tostring(val))
+    end
+end
 
 function ARC9TopButton:Init()
     self:SetText("")
     self:SetSize(ARC9ScreenScale(21), ARC9ScreenScale(21))
-    self.DarkMode = GetConVar("arc9_hud_darkmode"):GetBool()
+    self.DarkMode = !GetConVar("arc9_hud_lightmode"):GetBool()
 end
 
 function ARC9TopButton:Paint(w, h)
@@ -40,6 +64,12 @@ function ARC9TopButton:Paint(w, h)
 
     if self:IsDown() or (self.Checkbox and self:GetChecked()) then
         iconcolor = ARC9.GetHUDColor("hi")
+    end
+
+    if self.Notif then
+        surface.SetDrawColor(self.ColorNotif, 255)
+        surface.SetMaterial(mat)
+        surface.DrawTexturedRect(0, 0, w, h)
     end
 
     surface.SetDrawColor(color)
@@ -65,6 +95,12 @@ function ARC9TopButton:Paint(w, h)
     surface.SetDrawColor(iconcolor)
     surface.SetMaterial(icon)
     surface.DrawTexturedRect(h / 5, h / 5, h - h / 2.5, h - h / 2.5)
+
+    if self.Notif then
+        surface.SetDrawColor(self.ColorNotif)
+        surface.SetMaterial(self.MatNotif)
+        surface.DrawTexturedRect(w - h / 3, 0, h / 3, h / 3)
+    end
 end
 
 function ARC9TopButton:OnCursorEntered()
@@ -73,6 +109,10 @@ end
 
 function ARC9TopButton:SetIcon(mat)
     self.Icon = mat
+end
+
+function ARC9TopButton:SetNotif(val)
+    self.Notif = val
 end
 
 function ARC9TopButton:SetButtonText(text, font)
@@ -90,6 +130,10 @@ ARC9AttButton.Color = ARC9.GetHUDColor("fg")
 ARC9AttButton.ColorBlock = ARC9.GetHUDColor("con")
 ARC9AttButton.Icon = Material("arc9/ui/settings.png", "mips")
 ARC9AttButton.MatIdle = Material("arc9/ui/att.png", "mips")
+ARC9AttButton.MatFolderBack = Material("arc9/ui/folder_back.png", "mips smooth")
+ARC9AttButton.MatFolderFront = Material("arc9/ui/folder_front.png", "mips smooth")
+ARC9AttButton.MatFolderFrontFav = Material("arc9/ui/folder_front_fav.png", "mips smooth")
+ARC9AttButton.MatFolderHeart = Material("arc9/ui/folder_heart.png", "mips smooth")
 ARC9AttButton.MatEmpty = Material("arc9/ui/att_empty.png", "mips")
 -- ARC9AttButton.MatHover = Material("arc9/ui/att_hover.png", "mips")
 ARC9AttButton.MatBlock = Material("arc9/ui/att_block.png", "mips")
@@ -97,6 +141,7 @@ ARC9AttButton.MatMarkerInstalled = Material("arc9/ui/mark_installed.png", "mips 
 ARC9AttButton.MatMarkerLock = Material("arc9/ui/mark_lock.png", "mips smooth")
 ARC9AttButton.MatMarkerLinked = Material("arc9/ui/mark_linked.png", "mips smooth")
 ARC9AttButton.MatMarkerModes = Material("arc9/ui/mark_modes.png", "mips smooth")
+ARC9AttButton.MatMarkerPaint = Material("arc9/ui/paint.png", "mips smooth")
 ARC9AttButton.MatMarkerSlots = Material("arc9/ui/mark_slots.png", "mips smooth")
 ARC9AttButton.MatMarkerFavorite = Material("arc9/ui/mark_favorite.png", "mips smooth")
 
@@ -126,7 +171,9 @@ function ARC9AttButton:Paint(w, h)
         textcolor = colorclicked
     end
 
-    if self.HasModes then
+    if self.HasPaint then
+        matmarker = self.MatMarkerPaint
+    elseif self.HasModes then
         matmarker = self.MatMarkerModes
     elseif self.HasSlots then
         matmarker = self.MatMarkerSlots
@@ -134,6 +181,10 @@ function ARC9AttButton:Paint(w, h)
 
     if self.Empty then
         mat = self.MatEmpty
+        if self.EmptyGreyOut then
+            color = colorgrey
+            iconcolor = colorgrey
+        end
     elseif not self.CanAttach and not self.Installed then
         if self.MissingDependents then
             matmarker = self.MatMarkerLinked
@@ -190,12 +241,46 @@ function ARC9AttButton:Paint(w, h)
         surface.DrawTexturedRect(w - ARC9ScreenScale(11), ARC9ScreenScale(3), ARC9ScreenScale(8), ARC9ScreenScale(8))
     end
 
-    if self.FolderContain then
+    if self.FolderContain then -- is folder
         surface.SetFont("ARC9_12")
         local tww = surface.GetTextSize(self.FolderContain)
         surface.SetTextColor(iconcolor)
         surface.SetTextPos((w - tww) / 2, h - ARC9ScreenScale(28))
         surface.DrawText(self.FolderContain)
+
+
+        if self.FolderIcon1 and !self.FolderIcon2 then -- single icon
+            surface.SetMaterial(self.FolderIcon1)
+            surface.SetDrawColor(iconcolor) -- icon
+            -- draw shadow here, idk how
+            surface.DrawTexturedRectRotated(w/2, w/3.3, w/2*1.05, w/2*1.05, 0)
+            surface.DrawTexturedRectRotated(w/2, w/3.3, w/2, w/2, 0)
+        else
+            if self.FolderIcon1 then
+                surface.SetMaterial(self.FolderIcon1)
+                surface.SetDrawColor(iconcolor) -- icon
+                -- draw shadow here, idk how
+                surface.DrawTexturedRectRotated(w/3.05, w/3.3, w/2.625*1.07, w/2.625*1.07, 20.4) -- 512/168, 512/155, 512/195
+                surface.DrawTexturedRectRotated(w/3.05, w/3.3, w/2.625, w/2.625, 20.4) -- 512/168, 512/155, 512/195
+            end
+
+            if self.FolderIcon2 then
+                surface.SetMaterial(self.FolderIcon2)
+                surface.SetDrawColor(iconcolor)
+                surface.DrawTexturedRectRotated(w/1.45, w/3.0, w/2.625*1.07, w/2.625*1.07, -18) -- 512/358, 512/155, 512/195
+                surface.DrawTexturedRectRotated(w/1.45, w/3.0, w/2.625, w/2.625, -18) -- 512/358, 512/155, 512/195
+            end
+        end
+
+        surface.SetDrawColor(color)
+        surface.SetMaterial(self.FolderFav and self.MatFolderFrontFav or self.MatFolderFront)
+        surface.DrawTexturedRect(0, 0, w, w)
+
+        if self.FolderFav then
+            surface.SetDrawColor(colorclicked)
+            surface.SetMaterial(self.MatFolderHeart)
+            surface.DrawTexturedRect(0, 0, w, w)
+        end
     end
 
     -- text
@@ -203,11 +288,14 @@ function ARC9AttButton:Paint(w, h)
     local tw = surface.GetTextSize(text)
     surface.SetTextColor(textcolor)
 
+    -- print(textcolor)
+
     if tw > w then
         ARC9.DrawTextRot(self, text, 0, h - ARC9ScreenScale(13.5), 0, h - ARC9ScreenScale(13.5), w, false)
     else
         surface.SetTextPos((w - tw) / 2, h - ARC9ScreenScale(13.5))
         surface.DrawText(text)
+        -- markup.Parse("<font=ARC9_9>" .. text):Draw((w - tw) / 2, h - ARC9ScreenScale(13.5), TEXT_ALIGN_LEFT, TEXT_ALIGN_LEFT)
     end
 
     if att then
@@ -232,6 +320,15 @@ function ARC9AttButton:Paint(w, h)
             surface.SetTextPos(w - qtw - ARC9ScreenScale(4), ARC9ScreenScale(1))
             surface.DrawText(qtext)
         end
+
+        if self.Installed or qty > 0 then
+        else
+            surface.SetMaterial( ARC9AttButton.MatMarkerLock )
+            surface.SetDrawColor( 255, 255, 255, 32 )
+
+            local size = ARC9ScreenScale(14)
+            surface.DrawTexturedRect(ARC9ScreenScale(21.5) - size/2, ARC9ScreenScale(21.5) - size/2, size, size )
+        end
     end
 end
 
@@ -249,6 +346,10 @@ end
 
 function ARC9AttButton:SetEmpty(bool)
     self.Empty = bool
+end
+
+function ARC9AttButton:SetEmptyGreyOut(bool)
+    self.EmptyGreyOut = bool
 end
 
 function ARC9AttButton:SetOverrideHovered(bool)
@@ -281,12 +382,24 @@ function ARC9AttButton:SetHasModes(bool)
     self.HasModes = bool
 end
 
+function ARC9AttButton:SetHasPaint(bool)
+    self.HasPaint = bool
+end
+
 function ARC9AttButton:SetHasSlots(bool)
     self.HasSlots = bool
 end
 
 function ARC9AttButton:SetFullColorIcon(bool)
     self.FullColorIcon = bool
+end
+
+function ARC9AttButton:SetFolderIcon(id, mat, isfav)
+    self.Icon = ARC9AttButton.MatFolderBack
+    if id == 1 then self.FolderIcon1 = mat
+    elseif id == 2 then self.FolderIcon2 = mat end
+
+    if isfav then self.FolderFav = true end
 end
 
 vgui.Register("ARC9AttButton", ARC9AttButton, "DCheckBox") -- DButton
@@ -468,12 +581,14 @@ function ARC9Checkbox:Paint(w, h)
         surface.DrawTexturedRect(0, 0, w, w)
     end
 
-    if self:IsHovered() then
+    if self:IsHovered() and self:IsEnabled() then
         surface.SetDrawColor(color2)
         surface.SetMaterial(self.MatSel)
         surface.DrawTexturedRect(0, 0, w, w)
     end
 end
+
+ARC9Checkbox.ConVarChanged = syncconvar
 
 vgui.Register("ARC9Checkbox", ARC9Checkbox, "DCheckBox")
 local ARC9NumSlider = {}
@@ -498,13 +613,16 @@ function ARC9NumSlider:Init()
         surface.DrawRect(0, h / 3, w * self.Scratch:GetFraction(), h / 4)
     end
 
+    self.Scratch.ConVarChanged = syncconvardelayed
+    self.TextArea.ConVarChanged = syncconvardelayed
+
     self.TextArea:SetWide(ARC9ScreenScale(20))
     self.TextArea:DockMargin(ARC9ScreenScale(3), 0, 0, 0)
     self.TextArea:SetHighlightColor(color2)
     self.TextArea:SetCursorColor(color2)
     self.TextArea:SetTextColor(color)
     self.TextArea:SetFont("ARC9_10_Slim")
-    -- self.TextArea.Paint = function(panel, w, h) 
+    -- self.TextArea.Paint = function(panel, w, h)
     --     surface.SetFont("ARC9_10_Slim")
     --     local text = panel:GetValue() or "Owo"
     --     local tw = surface.GetTextSize(text)
@@ -513,6 +631,7 @@ function ARC9NumSlider:Init()
     --     surface.DrawText(text)
     -- end
 end
+
 
 vgui.Register("ARC9NumSlider", ARC9NumSlider, "DNumSlider")
 local ARC9ComboBox = {}
@@ -541,7 +660,11 @@ function ARC9ComboBox:OnSelect(index, value, data)
     self.text = self:GetText()
 
     if self.Convar then
-        RunConsoleCommand(self.Convar, data)
+        if LocalPlayer():IsAdmin() and ARC9.ShouldNetworkConVar(LocalPlayer(), self.Convar) then
+            ARC9.NetworkConVar(self.Convar, tostring(data))
+        else
+            RunConsoleCommand(self.Convar, data)
+        end
     end
 
     self:SetText("")
@@ -888,16 +1011,27 @@ function ARC9ColorButton:DoClick()
             newel.ResultColor.a = newel.Alpha
         end
 
-        self.rgbcolor = newel.ResultColor
-        RunConsoleCommand(self.Convar .. "_r", self.rgbcolor.r)
-        RunConsoleCommand(self.Convar .. "_g", self.rgbcolor.g)
-        RunConsoleCommand(self.Convar .. "_b", self.rgbcolor.b)
+        if LocalPlayer():IsAdmin() and ARC9.ShouldNetworkConVar(LocalPlayer(), self.m_strConVar) then
+            timer.Create("cvarsend_" .. self.Convar, 0.5, 1, function()
+                ARC9.NetworkConVar(self.Convar .. "_r", tostring(self.rgbcolor.r))
+                ARC9.NetworkConVar(self.Convar .. "_g", tostring(self.rgbcolor.g))
+                ARC9.NetworkConVar(self.Convar .. "_b", tostring(self.rgbcolor.b))
+                if newel.Alpha then
+                    ARC9.NetworkConVar(self.Convar .. "_a", tostring(self.rgbcolor.a))
+                end
+            end)
+        else
+            self.rgbcolor = newel.ResultColor
+            RunConsoleCommand(self.Convar .. "_r", self.rgbcolor.r)
+            RunConsoleCommand(self.Convar .. "_g", self.rgbcolor.g)
+            RunConsoleCommand(self.Convar .. "_b", self.rgbcolor.b)
 
-        if newel.Alpha then
-            RunConsoleCommand(self.Convar .. "_a", self.rgbcolor.a)
+            if newel.Alpha then
+                RunConsoleCommand(self.Convar .. "_a", self.rgbcolor.a)
+            end
         end
 
-        -- self:ApplyConvar or something idk () 
+        -- self:ApplyConvar or something idk ()
         newel:Remove()
         bg:Remove()
     end
@@ -936,3 +1070,50 @@ function ARC9ColorButton:Paint(w, h)
 end
 
 vgui.Register("ARC9ColorButton", ARC9ColorButton, "DButton")
+
+local ARC9InputField = {}
+ARC9InputField.Color = ARC9.GetHUDColor("fg")
+ARC9InputField.ColorClicked = ARC9.GetHUDColor("hi")
+ARC9InputField.MatIdle = Material("arc9/ui/button.png", "mips")
+ARC9InputField.MatSel = Material("arc9/ui/button_sel.png", "mips")
+
+function ARC9InputField:Init()
+    self:SetSize(ARC9ScreenScale(84), ARC9ScreenScale(13))
+
+    self:SetPaintBackground(false)
+    self:SetTextColor(color_white)
+    self:SetFont("ARC9_10")
+    self:SetDrawLanguageID(false)
+end
+
+function ARC9InputField:Paint(w, h)
+    local color = self.Color
+    local color2 = ARC9.GetHUDColor("hi")
+
+    if self:IsEditing() then
+        color = color2
+    end
+
+    surface.SetDrawColor(color)
+    surface.SetMaterial(self.MatIdle)
+    surface.DrawTexturedRect(0, 0, w, h)
+
+    if self:IsHovered() then
+        surface.SetDrawColor(color2)
+        surface.SetMaterial(self.MatSel)
+        surface.DrawTexturedRect(0, 0, w, h)
+    end
+
+    if self:IsEditing() then
+        derma.SkinHook("Paint", "TextEntry", self, w, h) -- stupid bitch gmod does not allow editing DTextEntry text field
+    else
+        surface.SetFont("ARC9_10")
+        surface.SetTextColor(color)
+        surface.SetTextPos(ARC9ScreenScale(4), ARC9ScreenScale(1))
+        surface.DrawText(self:GetText() == "" and self:GetPlaceholderText() or self:GetValue())
+    end
+
+    return false
+end
+
+vgui.Register("ARC9InputField", ARC9InputField, "DTextEntry")

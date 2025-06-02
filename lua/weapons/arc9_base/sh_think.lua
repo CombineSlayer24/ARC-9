@@ -29,7 +29,7 @@ local swepThinkGrenade = SWEP.ThinkGrenade
 local swepThinkRecoil = SWEP.ThinkRecoil
 local swepThinkHoldBreath = SWEP.ThinkHoldBreath
 local swepThinkLockOn = SWEP.ThinkLockOn
-local swepThinkLean = SWEP.ThinkLean
+-- local swepThinkLean = SWEP.ThinkLean
 local swepThinkFiremodes = SWEP.ThinkFiremodes
 local swepThinkInspect = SWEP.ThinkInspect
 local swepThinkSprint = SWEP.ThinkSprint
@@ -134,8 +134,8 @@ function SWEP:Think()
 
             if weaponGetNextPrimaryFire(self) + delay + swepGetProcessedValue(self, "AfterShotParticleDelay") < now then
                 self:SetAfterShot(false)
-                if swepGetProcessedValue(self, "AfterShotParticle", true) then
-                    local att = swepGetProcessedValue(self, "AfterShotQCA") or swepGetProcessedValue(self, "MuzzleEffectQCA", true)
+                if swepGetProcessedValue(self, "AfterShotParticle") then
+                    local att = swepGetProcessedValue(self, "AfterShotQCA", true) or swepGetProcessedValue(self, "MuzzleEffectQCA", true)
 
                     local data = EffectData()
                     data:SetEntity(self)
@@ -159,7 +159,7 @@ function SWEP:Think()
             swepThinkSights(self)
             swepThinkMelee(self)
             self:ThinkUBGL()
-            swepThinkGrenade(self)
+            self:ThinkGrenade()
             self:ThinkTriggerSounds()
         end
         -- Done
@@ -169,7 +169,7 @@ function SWEP:Think()
     end
 
     if shouldRunPredicted then
-        swepThinkLean(self)
+        -- swepThinkLean(self)
         swepThinkFiremodes(self)
         swepThinkInspect(self)
     end
@@ -200,22 +200,35 @@ function SWEP:Think()
     end
 
     if CLIENT then
-        if !self.LoadedPreset then
-            self.LoadedPreset = true
-
-            timer.Simple(0.06, function() -- idk
+        if !self.LoadedPreset and !self:GetNoPresets() then
+            timer.Simple(0.075, function() -- idk
                 if IsValid(self) then
-                    if cvarGetBool(cvarArcAutosave) then
-                        swepLoadPreset(self, "autosave")
-                    else
-                        swepLoadPreset(self, "default")
+                    if !self.LoadedPreset then -- still same?
+                        self.LoadedPreset = true
+
+                        if cvarGetBool(cvarArcAutosave) then
+                            swepLoadPreset(self, "autosave")
+                        else
+                            swepLoadPreset(self, "default")
+                        end
                     end
                 end
             end)
-
-            self:SetReady(false)
-            swepDoDeployAnimation(self)
         end
+
+        if !self.ClientStarted then
+            self.ClientStarted = true
+            self:SetReady(false)
+            self:DoDeployAnimation()
+            
+            if LocalPlayer().ARC9_IncompatibilityCheck != true then
+                LocalPlayer().ARC9_IncompatibilityCheck = true
+
+                ARC9.DoCompatibilityCheck()
+            end
+        end
+
+        if isSingleplayer and self.IsQuickGrenade then owner.ARC9LastSelectedGrenade = self:GetClass() end
     end
 end
 

@@ -1,3 +1,14 @@
+
+function SWEP:SetReloadTimer( time, amount )
+    self:SetReloadTime( time )
+    self:SetReloadAmount( amount )
+end
+
+function SWEP:KillReloadTimer()
+    self:SetReloadTime( 0 )
+    self:SetReloadAmount( 0 )
+end
+
 function SWEP:Reload()
     if self:GetOwner():IsNPC() then
         self:NPC_Reload()
@@ -11,6 +22,8 @@ function SWEP:Reload()
     if !self:GetProcessedValue("CanReloadWhileUnCycled", true) and self:GetNeedsCycle() then
         return
     end
+
+    if self:GetIsSprinting() and self:GetProcessedValue("SprintCancelsReload", true) then return end
 
     -- if !self:GetProcessedValue("UBGLInsteadOfSights") and self:GetValue("UBGL") then
     --     if self:GetOwner():KeyDown(IN_USE) then
@@ -97,29 +110,25 @@ function SWEP:Reload()
 
     anim = self:RunHook("Hook_SelectReloadAnimation", anim) or anim
 
-    local t = self:PlayAnimation(anim, self:GetProcessedValue("ReloadTime"), true)
+    local reloadtimemult = self:GetProcessedValue("ReloadTime")
+
+    local t = self:PlayAnimation(anim, reloadtimemult, true)
 
     if !self:GetShouldShotgunReload() then
-        local minprogress = self:GetAnimationEntry(self:TranslateAnimation(anim)).MinProgress or 1
+		local animation = self:GetAnimationEntry(self:TranslateAnimation(anim))
+
+        local minprogress = animation.RefillProgress or animation.MinProgress or 1
         minprogress = math.min(minprogress, 0.95)
 
         if !self:GetAnimationEntry(self:TranslateAnimation(anim)).RestoreAmmo then
-            if getUBGL then
-                self:SetTimer(t * minprogress, function()
-                    self:RestoreClip(self:GetValue("UBGLClipSize"))
-                end, "reloadtimer")
-            else
-                self:SetTimer(t * minprogress, function()
-                    self:RestoreClip(self:GetValue("ClipSize"))
-                end, "reloadtimer")
-            end
+            self:SetReloadTimer( CurTime() + (t * minprogress), self:GetValue(getUBGL and "UBGLClipSize" or "ClipSize") )
         end
 
         local newcliptime = self:GetAnimationEntry(self:TranslateAnimation(anim)).MagSwapTime or 0.5
 
         if !getUBGL then
             if !self:GetAnimationEntry(self:TranslateAnimation(anim)).NoMagSwap then
-                self:SetTimer(self:GetProcessedValue("ReloadTime") * newcliptime, function()
+                self:SetTimer(reloadtimemult * newcliptime, function()
                     local ammo1 = self:Ammo1()
 
                     if self:GetInfiniteAmmo() then
@@ -134,8 +143,8 @@ function SWEP:Reload()
     end
 
     if !self:PredictionFilter() then
-        if self:GetProcessedValue("ShouldDropMag", true) or self:GetProcessedValue("ShouldDropMagEmpty", true) and clip == 0 then
-            self:SetTimer(self:GetProcessedValue("DropMagazineTime", true), function()
+        if self:GetProcessedValue("ShouldDropMag") or self:GetProcessedValue("ShouldDropMagEmpty") and clip == 0 then
+            self:SetTimer(self:GetProcessedValue("DropMagazineTime", true) * reloadtimemult, function()
                 self:DropMagazine()
             end)
         end
@@ -147,9 +156,12 @@ function SWEP:Reload()
 
     self:SetReloading(true)
     self:SetEndReload(false)
+    self:SetCycleFinishTime(0)
     -- self:ToggleBlindFire(false)
     self:SetRequestReload(false)
     self:SetRecoilAmount(0)
+    self:SetNeedTriggerPress(false) -- Allows you to keep spraying with Auto-Reload
+    self:SetBurstCount(0)
 
     -- self:SetTimer(t * 0.9, function()
     --     if !IsValid(self) then return end
@@ -197,6 +209,8 @@ function SWEP:CancelReload()
 
     self:SetReloading(false)
     self:SetReloadFinishTime(0)
+    self:SetCycleFinishTime(0)
+    self:SetNeedTriggerPress(false) -- Allows you to keep spraying with Auto-Reload
     local vm = self:GetVM()
     vm:SetSequence(0)
     vm:SetCycle(0)
@@ -204,7 +218,7 @@ function SWEP:CancelReload()
     self:PlayAnimation("idle")
     self:DoPlayerAnimationEvent(ACT_HL2MP_GESTURE_RELOAD_MAGIC)
     self:CancelSoundTable()
-    self:KillTimer("reloadtimer")
+    self:KillReloadTimer()
     self:SetIKTimeLineStart(0)
     self:SetIKTime(0)
     self:SetEmptyReload(false)
@@ -412,6 +426,7 @@ function SWEP:EndReload()
 
             self:PlayAnimation(anim, self:GetProcessedValue("ReloadTime", nil, 1), true)
             self:SetReloading(false)
+            self:SetCycleFinishTime(0)
 
             self:SetNthShot(0)
 
@@ -419,6 +434,7 @@ function SWEP:EndReload()
                 self:SetNthReload(self:GetNthReload() + 1)
             end
 
+            self:SetNeedTriggerPress(false) -- Allows you to keep spraying with Auto-Reload
             self:SetEmptyReload(false)
         else
             local anim = "reload_insert"
@@ -487,6 +503,11 @@ function SWEP:EndReload()
 end
 
 function SWEP:ThinkReload()
+    if self:GetReloadTime() != 0 and self:GetReloadTime() <= CurTime() then
+        self:RestoreClip( self:GetReloadAmount() )
+        self:SetReloadTime( 0 )
+        self:SetReloadAmount( 0 )
+    end
     if self:GetReloading() and self:GetReloadFinishTime() <= CurTime() then
         self:EndReload()
     end
@@ -547,6 +568,7 @@ function SWEP:HasAmmoInClip()
 end
 
 function SWEP:DoBulletPose()
+    if SERVER then return end
     local pp = self:Clip1()
 
     local vm = self:GetVM()
@@ -576,3 +598,19 @@ function SWEP:Ammo2()
     return self:GetOwner():GetAmmoCount(self:GetProcessedValue("UBGLAmmo"))
 end
 
+function SWEP:GetReloadingProgress()
+    local fuckingreloadprocessinfluence, fuckingreloadprocess = 0, 0
+    if self:GetReloading() and !self:GetProcessedValue("ShotgunReload", true) then
+        fuckingreloadprocessinfluence = 1
+        fuckingreloadprocess = math.Clamp(1 - (self:GetReloadFinishTime() - CurTime()) / (self.ReloadTime * self:GetAnimationTime("reload")), 0, 1)
+        if fuckingreloadprocess <= 0.1 then
+            fuckingreloadprocessinfluence = fuckingreloadprocess * 10
+        elseif fuckingreloadprocess > 0.75 then
+            fuckingreloadprocessinfluence = math.max(0, 1 - ((fuckingreloadprocess - 0.75) * 8))
+        end
+        
+        fuckingreloadprocessinfluence = math.ease.InCirc(fuckingreloadprocessinfluence)
+    end
+
+    return fuckingreloadprocessinfluence, fuckingreloadprocess
+end

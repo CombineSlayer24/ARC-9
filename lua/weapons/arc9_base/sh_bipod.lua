@@ -3,18 +3,18 @@ function SWEP:ThinkBipod()
     local owner = self:GetOwner()
 
     if bip then
-        if self:MustExitBipod() or owner:KeyDown(IN_BACK) then
+        if owner:KeyDown(IN_BACK) or self:MustExitBipod() then
             self:ExitBipod()
         end
     else
-        if self:CanBipod() and owner:KeyPressed(IN_ATTACK2) then
+        if owner:KeyPressed(IN_ATTACK2) and self:CanBipod() then
             self:EnterBipod()
         end
     end
 end
 
 function SWEP:MustExitBipod()
-    if !self:GetProcessedValue("Bipod") then return true end
+    if !self:GetProcessedValue("Bipod", true) then return true end
     if self:GetSprintAmount() > 0 then return true end
     -- if self:GetBlindFireAmount() > 0 then return true end
     if self:GetUBGL() then return true end
@@ -25,7 +25,7 @@ function SWEP:MustExitBipod()
 end
 
 function SWEP:CanBipod(ang)
-    if !self:GetProcessedValue("Bipod") then return end
+    if !self:GetProcessedValue("Bipod", true) then return end
     if self:GetSprintAmount() > 0 then return end
     if self:GetReloading() and !self:GetBipod() then return end
     -- if self:GetBlindFireAmount() > 0 then return end
@@ -94,6 +94,9 @@ function SWEP:EnterBipod()
     self:SetBipodPos(owner:EyePos() + (owner:EyeAngles():Forward() * 4) - Vector(0, 0, 2))
 
     self:ExitSights()
+
+    owner.ARC9_HadNoDMGForceEFlag = owner:IsEFlagSet( EFL_NO_DAMAGE_FORCES )
+    owner:AddEFlags( EFL_NO_DAMAGE_FORCES )
 end
 
 function SWEP:ExitBipod(force)
@@ -112,6 +115,11 @@ function SWEP:ExitBipod(force)
     self:CancelReload()
 
     self:ExitSights()
+
+    local owner = self:GetOwner()
+
+    if !owner.ARC9_HadNoDMGForceEFlag then owner:RemoveEFlags( EFL_NO_DAMAGE_FORCES ) end
+    owner.ARC9_HadNoDMGForceEFlag = nil
 end
 
 SWEP.BipodTime = 0.5

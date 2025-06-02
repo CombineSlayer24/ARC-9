@@ -80,10 +80,10 @@ function ARC9:ShootPhysBullet(wep, pos, vel, tbl)
 
     local bullet = {
         Penleft = wep:GetProcessedValue("Penetration"),
-        Gravity = wep:GetProcessedValue("PhysBulletGravity"),
+        Gravity = wep:GetProcessedValue("PhysBulletGravity", true),
         Pos = pos,
         Vel = vel,
-        Drag = wep:GetProcessedValue("PhysBulletDrag"),
+        Drag = wep:GetProcessedValue("PhysBulletDrag", true),
         Travelled = 0,
         StartTime = CurTime(),
         Imaginary = false,
@@ -97,8 +97,8 @@ function ARC9:ShootPhysBullet(wep, pos, vel, tbl)
         Color = wep:GetProcessedValue("TracerColor"),
         Fancy = wep:GetProcessedValue("FancyBullets"),
         Size = wep:GetProcessedValue("TracerSize"),
-        Guidance = wep:GetProcessedValue("BulletGuidance"),
-        GuidanceAmount = wep:GetProcessedValue("BulletGuidanceAmount"),
+        Guidance = wep:GetProcessedValue("BulletGuidance", true),
+        GuidanceAmount = wep:GetProcessedValue("BulletGuidanceAmount", true),
         Secondary = wep:GetUBGL(),
         Distance = wep:GetProcessedValue("Distance"),
         FirstTimeProcessed = true
@@ -200,8 +200,8 @@ if CLIENT then
             Fancy = weapon:GetProcessedValue("FancyBullets"),
             Size = weapon:GetProcessedValue("TracerSize"),
             Filter = {ent},
-            Guidance = weapon:GetProcessedValue("BulletGuidance"),
-            GuidanceAmount = weapon:GetProcessedValue("BulletGuidanceAmount"),
+            Guidance = weapon:GetProcessedValue("BulletGuidance", true),
+            GuidanceAmount = weapon:GetProcessedValue("BulletGuidanceAmount", true),
             GuidanceTarget = weapon:GetLockOnTarget(),
             Invisible = false,
             Secondary = weapon:GetUBGL(),
@@ -369,13 +369,13 @@ function ARC9:ProgressPhysBullet(bullet, timestep)
             attacker.ARC9_LAGCOMP = false
         end
 
-        if ARC9.Dev(2) then
-            if SERVER then
-                debugoverlay.Line(oldpos, tr.HitPos, 5, Color(100,100,255), true)
-            else
-                debugoverlay.Line(oldpos, tr.HitPos, 5, Color(255,200,100), true)
-            end
-        end
+        -- if ARC9.Dev(2) then
+        --     if SERVER then
+        --         debugoverlay.Line(oldpos, tr.HitPos, 5, Color(100,100,255), true)
+        --     else
+        --         debugoverlay.Line(oldpos, tr.HitPos, 5, Color(255,200,100), true)
+        --     end
+        -- end
 
         if tr.HitSky then
             if CLIENT and bulletImaginary:GetBool() then
@@ -401,13 +401,13 @@ function ARC9:ProgressPhysBullet(bullet, timestep)
                 attacker.ARC9_LAGCOMP = true
             end
 
-            if ARC9.Dev(2) then
-                if SERVER then
-                    debugoverlay.Cross(tr.HitPos, 5, 5, Color(100,100,255), true)
-                else
-                    debugoverlay.Cross(tr.HitPos, 5, 5, Color(255,200,100), true)
-                end
-            end
+            -- if ARC9.Dev(2) then
+            --     if SERVER then
+            --         debugoverlay.Cross(tr.HitPos, 5, 5, Color(100,100,255), true)
+            --     else
+            --         debugoverlay.Cross(tr.HitPos, 5, 5, Color(255,200,100), true)
+            --     end
+            -- end
 
             local eid = tr.Entity:EntIndex()
 
@@ -456,7 +456,7 @@ function ARC9:ProgressPhysBullet(bullet, timestep)
                     end
 
                     fireBullets2.Damage = weapon:GetProcessedValue("DamageMax")
-                    fireBullets2.Force = weapon:GetProcessedValue("ImpactForce")
+                    fireBullets2.Force = weapon:GetProcessedValue("ImpactForce") / (weapon:GetProcessedValue("Num", true) or 1)
                     fireBullets2.Dir = bullet.Vel:GetNormalized()
                     fireBullets2.Src = oldpos
                     fireBullets2.Spread = vector_origin

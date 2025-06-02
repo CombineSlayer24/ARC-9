@@ -1,4 +1,5 @@
 SWEP.AttachmentAddresses = {}
+SWEP.ElementTablesCache = nil
 
 function SWEP:LocateSlotFromAddress(address)
     return self.AttachmentAddresses[address]
@@ -62,6 +63,34 @@ function SWEP:GetAttachmentList()
     return atts
 end
 
+function SWEP:GetAttachmentElements()
+    if self.ElementTablesCache then return self.ElementTablesCache end
+
+    local eletables = {}
+
+    local eles = self:GetElements()
+
+    for i, _ in pairs(eles) do
+        local ele = self.AttachmentElements[i]
+
+        if !ele then continue end
+
+        table.insert(eletables, ele)
+    end
+
+    for _, slot in ipairs(self:GetSubSlotList()) do
+        local atttbl = self:GetFinalAttTable(slot)
+
+        if atttbl.Element then
+            table.insert(eletables, atttbl.Element)
+        end
+    end
+
+    self.ElementTablesCache = eletables
+
+    return eletables
+end
+
 -- tbl: The table we are installing on to the gun
 -- parenttbl: The parent of the table we are installing on to
 function SWEP:BuildSubAttachmentTree(tbl, parenttbl)
@@ -79,20 +108,18 @@ function SWEP:BuildSubAttachmentTree(tbl, parenttbl)
         for i, k in ipairs(tbl.SubAttachments or {}) do
             if !subatts[i] then continue end
             subatts[i].Bone = parenttbl.Bone
-            local att_pos = parenttbl.Pos
-            local att_ang = parenttbl.Ang
+            local att_pos = parenttbl.Pos or Vector()
+            local att_ang = parenttbl.Ang or Angle()
 
             local og_addr = parenttbl.OriginalAddress
 
             if og_addr then
-                local eles = self:GetElements()
+                local eles = self:GetAttachmentElements()
 
-                for i2, _ in pairs(eles) do
-                    local ele = self.AttachmentElements[i2]
+                for _, eletable in pairs(eles) do
+                    if !eletable then continue end
 
-                    if !ele then continue end
-
-                    local mods = ele.AttPosMods or {}
+                    local mods = eletable.AttPosMods or {}
 
                     if mods[og_addr] then
                         att_pos = mods[og_addr].Pos or att_pos
@@ -182,6 +209,8 @@ end
 
 -- Call this after changing the attachment structure
 function SWEP:BuildSubAttachments(tbl)
+    if !istable(tbl) then print("Invalid attachment structure!!") return end
+    
     for i, k in ipairs(self.Attachments) do
         k.OriginalAddress = i
         k.SubAttachments = {}
@@ -195,7 +224,7 @@ function SWEP:BuildSubAttachments(tbl)
         if !k.Installed then continue end
 
         local atttbl = ARC9.GetAttTable(k.Installed)
-        self.Attachments[i].ToggleNum = k.ToggleNum or 1
+        self.Attachments[i].ToggleNum = k.ToggleNum or k.t or 1
 
         if atttbl then
             if atttbl.Attachments then
@@ -220,7 +249,7 @@ function SWEP:ValidateInventoryForNewTree(tree)
 
         if atttbl.Free then continue end
 
-        local has = (currcount[att] or 0) + ARC9:PlayerGetAtts(self:GetOwner(), att)
+        local has = (currcount[att] or 0) + ARC9:PlayerGetAtts(self:GetOwner(), att, self)
         local need = attc
 
         if has >= need then
@@ -272,7 +301,7 @@ function SWEP:FillIntegralSlots()
     for _, slot in ipairs(self:GetSubSlotList()) do
         if !slot.Integral or slot.Installed then continue end
 
-        if isstring(slot.Integral) and ARC9:PlayerGetAtts(self:GetOwner(), slot.Integral) > 0 then
+        if isstring(slot.Integral) and ARC9:PlayerGetAtts(self:GetOwner(), slot.Integral, self) > 0 then
             slot.Installed = slot.Integral
             ARC9:PlayerTakeAtt(self:GetOwner(), slot.Installed, 1)
         else

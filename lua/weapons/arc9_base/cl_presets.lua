@@ -261,7 +261,7 @@ function SWEP:SavePreset(presetname, nooverride, forcedname)
     end
 end
 
-local arc9_killfeed_color = GetConVar("arc9_killfeed_color")
+local arc9_killfeed_colour = GetConVar("arc9_killfeed_colour")
 local matshiny = Material("models/shiny")
 
 local colormodifyicontabll = {
@@ -277,7 +277,7 @@ local colormodifyicontabll = {
 }
 
 function SWEP:DoPresetCapture(filename, foricon)
-    local color = arc9_killfeed_color:GetBool()
+    local colorrr = arc9_killfeed_colour:GetBool()
 
     render.PushRenderTarget(cammat)
 
@@ -306,7 +306,7 @@ function SWEP:DoPresetCapture(filename, foricon)
 
     -- local ppos, pang = EyePos(), EyeAngles()
     local campos, camang = Vector(0, 0, 0), Angle(0, 0, 0)
-    local custpos, custang = self:GetProcessedValue("CustomizePos"), self:GetProcessedValue("CustomizeAng")
+    local custpos, custang = self:GetProcessedValue("CustomizePos", true), self:GetProcessedValue("CustomizeAng", true)
     custpos = custpos + self.CustomizeSnapshotPos
     custang = custang + self.CustomizeSnapshotAng
     local pos, ang = Vector(0, 0, 1), Angle(0, 0, 0)
@@ -370,13 +370,16 @@ function SWEP:DoPresetCapture(filename, foricon)
     self:DrawCustomModel(true, pos, ang)
 
     render.MaterialOverride()
-    render.SetWriteDepthToDestAlpha( true )
-    render.OverrideBlend( true, BLEND_ONE, BLEND_ZERO, BLENDFUNC_ADD, BLEND_ZERO, BLEND_ONE, BLENDFUNC_ADD )
+    
+    if colorrr then
+        render.SetWriteDepthToDestAlpha( true )
+        render.OverrideBlend( true, BLEND_ONE, BLEND_ZERO, BLENDFUNC_ADD, BLEND_ZERO, BLEND_ONE, BLENDFUNC_ADD )
 
-    self:DrawCustomModel(true, pos, ang)
+        self:DrawCustomModel(true, pos, ang)
 
-    render.MaterialOverride()
-    render.SetWriteDepthToDestAlpha( false )
+        render.MaterialOverride()
+        render.SetWriteDepthToDestAlpha( false )
+    end
 
     DrawSharpen(0.2, 0.5)
     DrawColorModify(colormodifyicontabll)
@@ -433,7 +436,7 @@ function SWEP:PruneUnnecessaryAttachmentDataRecursive(tbl)
     tbl.s = tbl.SubAttachments
 
     for i, k in pairs(tbl) do
-        if i != "i" and i != "s" and i != "t" then
+        if i != "i" and i != "s" and i != "t" and i != "ToggleNum" then
             tbl[i] = nil
         end
     end
@@ -510,6 +513,7 @@ function SWEP:ImportPresetCode(str)
 end
 
 function SWEP:SplitPresetContents(str)
+    if !isstring(str) then return end
     if str[1] != "[" then return end
     if !string.find(str, "]X") then return end
     local name = string.sub(string.Split(str, "]")[1], 2)
@@ -547,14 +551,44 @@ local function deletefolder(path)
     file.Delete(path)
 end
 
-concommand.Add("arc9_presets_clear", function(ply)
+concommand.Add("arc9_presets_clear", function(ply, command, arguments)
     if !IsValid(ply) then return end
 
     local weapon = ply:GetActiveWeapon()
+    local arg = arguments[1]
+    local hasgun = IsValid(weapon) and weapon.ARC9
 
-    if IsValid(weapon) and weapon.ARC9 then
-        deletefolder(ARC9.PresetPath .. (weapon.SaveBase or weapon:GetClass()) .. "/")
-    else
+	if arg == "all" or (arg == nil and !hasgun) then
         deletefolder(ARC9.PresetPath)
+    elseif arg == nil then
+        deletefolder(ARC9.PresetPath .. (weapon.SaveBase or weapon:GetClass()) .. "/")
+        
+        weapon:BuildSubAttachments(weapons.Get(weapon:GetClass()).Attachments) -- from original table
+        weapon:ClientInitialize()
+
+        timer.Simple(0.1, function() RunConsoleCommand( "arc9_giveswep_preset", arg, "default" ) end)
+    elseif isstring(arg) then
+        local weapon2 = weapons.Get(arg)
+        if weapon2 then
+            deletefolder(ARC9.PresetPath .. (weapon2.SaveBase or arg) .. "/")
+            
+            if ply:HasWeapon( arg ) then
+                local weapon = ply:GetWeapon( arg )
+
+                weapon:BuildSubAttachments(weapon2.Attachments) -- from original table
+                weapon:ClientInitialize()
+
+                timer.Simple(0.1, function() RunConsoleCommand( "arc9_giveswep_preset", arg, "default" ) end)
+            end
+        end
+    end
+end)
+
+net.Receive("arc9_sendpreset", function(len)
+    local wpn = net.ReadEntity()
+    local preset = net.ReadString()
+    
+    if IsValid(wpn) and wpn.ARC9 then
+        wpn:LoadPresetFromTable(wpn:ImportPresetCode(preset))
     end
 end)

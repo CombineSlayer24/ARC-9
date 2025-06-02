@@ -19,7 +19,12 @@ local function GetTrueRPM(self, base)
             end
 
             if self.ManualAction then
-                delay = delay + ((self.cycle or 1) * self.CycleTime)
+				-- What is self.cycle .
+				local cyclelen = self:GetAnimationTime("cycle")
+				local cycleent = self:GetAnimationEntry("cycle")
+				cyclelen = cyclelen * (cycleent.Mult or 1)
+				cyclelen = cyclelen * (cycleent.MinProgress or 1)
+                delay = delay + (cyclelen * self.CycleTime)
             end
 
             if self:GetCurrentFiremode() > 1 then
@@ -31,7 +36,7 @@ local function GetTrueRPM(self, base)
 
             a = 60 / delay
 
-            a = math.Round(a / 50, 0) * 50
+			a = math.Round(a)
 
             return a
         end
@@ -53,7 +58,11 @@ local function GetTrueRPM(self, base)
             end
 
             if self:GetProcessedValue("ManualAction") then
-                delay = delay + (self:GetAnimationTime("cycle") * self:GetProcessedValue("CycleTime"))
+				local cyclelen = self:GetAnimationTime("cycle")
+				local cycleent = self:GetAnimationEntry("cycle")
+				cyclelen = cyclelen * (cycleent.Mult or 1)
+				cyclelen = cyclelen * (cycleent.MinProgress or 1)
+                delay = delay + (cyclelen * self:GetProcessedValue("CycleTime"))
             end
 
             if self:GetCurrentFiremode() > 1 then
@@ -65,7 +74,7 @@ local function GetTrueRPM(self, base)
 
             a = 60 / delay
 
-            a = math.Round(a / 50, 0) * 50
+			a = math.Round(a)
 
             return a
         end
@@ -74,6 +83,7 @@ end
 
 function SWEP:CreateHUD_Stats()
     local lowerpanel = self.CustomizeHUD.lowerpanel
+	local imperial = GetConVar("arc9_imperial"):GetBool()
 
     -- if true then return end
     self:ClearTabPanel()
@@ -156,7 +166,7 @@ function SWEP:CreateHUD_Stats()
             fifty = 600,
             unit = "unit.rpm",
             conv = function(a)
-                a = math.Round(a / 50, 0) * 50
+                a = math.Round(a)
 
                 return a
             end,
@@ -203,10 +213,11 @@ function SWEP:CreateHUD_Stats()
         {
             title = "customize.stats.range",
             desc = "customize.stats.explain.range",
-            unit = "unit.meter",
+            unit = imperial and "unit.yard" or "unit.meter",
             fifty = 500,
             stat = "RangeMax",
             conv = function(a)
+				if imperial then return a * ARC9.HUToM * 1.0936 end
                 return a * ARC9.HUToM
             end,
             cond = function()
@@ -230,8 +241,11 @@ function SWEP:CreateHUD_Stats()
             desc = "customize.stats.explain.muzzlevelocity",
             stat = "PhysBulletMuzzleVelocity",
             fifty = 500,
-            unit = "unit.meterpersecond",
-            conv = function(a) return math.Round(a * ARC9.HUToM) end,
+            unit = imperial and "unit.footpersecond" or "unit.meterpersecond",
+            conv = function(a) 
+				if imperial then return math.Round(a * ARC9.HUToM * 3.2808399) end
+				return math.Round(a * ARC9.HUToM) 
+			end,
             cond = function()
                 return self:GetProcessedValue("PrimaryBash", true) or self:GetProcessedValue("ShootEnt")
             end
@@ -253,7 +267,11 @@ function SWEP:CreateHUD_Stats()
             desc = "customize.stats.explain.penetration",
             stat = "Penetration",
             fifty = 50,
-            unit = "unit.millimeter",
+            unit = imperial and "unit.inch" or "unit.millimeter",
+            conv = function(a) 
+				if imperial then return math.Round(a * ARC9.HUToM * 39.370, 2) end -- not using it directly because hutom
+				return math.Round(a * ARC9.HUToM * 1000, 2)
+			end,
             cond = function()
                 return self:GetProcessedValue("PrimaryBash", true) or self:GetProcessedValue("ShootEnt")
             end
@@ -450,7 +468,7 @@ function SWEP:CreateHUD_Stats()
         },
         {
             title = "Ergonomics",
-            desc = "EFT: Ergonomics affects the speed that the player aims down their sights and stamina drain.",
+            desc = "Ergonomics.desc",
             stat = "EFTErgo",
             fifty = 50,
             cond = function()
@@ -477,7 +495,7 @@ function SWEP:CreateHUD_Stats()
     local realI = 0
 
     local many = false                -- probably not the best way
-    for i, stat in ipairs(stats) do
+    for i, stat in pairs(stats) do
         if stat.cond and stat.cond() then continue end
         realI = realI + 1
         if realI > 6 then many = true end
@@ -485,7 +503,7 @@ function SWEP:CreateHUD_Stats()
 
     realI = 0
 
-    for i, stat in ipairs(stats) do
+    for i, stat in pairs(stats) do
         if stat.cond and stat.cond() then continue end
         realI = realI + 1
 

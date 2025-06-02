@@ -167,7 +167,7 @@ local function CreateAttButton(parent, attName, attTbl)
             srf.DrawTexturedRect(ARC9ScreenScale(2), 0, h, h)
         end
 
-        local txt = attTbl.PrintName
+        local txt = ARC9:GetPhrase(attName .. ".PrintName") or attTbl.PrintName
         if internalName or !txt then txt = attName end
         srf.SetTextColor(Bfg_col)
         srf.SetTextPos(ARC9ScreenScale(20), ARC9ScreenScale(2))
@@ -204,7 +204,7 @@ local function CreateAttButton(parent, attName, attTbl)
 end
 
 local clicksound = "arc9/newui/uimouse_click_return.ogg"
-local arc9_hud_darkmode = GetConVar("arc9_hud_darkmode")
+local arc9_hud_lightmode = GetConVar("arc9_hud_lightmode")
 
 function ARC9_BlacklistMenu()
     if blacklistWindow then blacklistWindow:Remove() end
@@ -221,7 +221,7 @@ function ARC9_BlacklistMenu()
     bg:MakePopup()
 
     bg.Paint = function(self2, w, h)
-        if arc9_hud_darkmode:GetBool() then
+        if !arc9_hud_lightmode:GetBool() then
             surface.SetDrawColor(58, 58, 58, 206)
         else
             surface.SetDrawColor(20, 20, 20, 224)

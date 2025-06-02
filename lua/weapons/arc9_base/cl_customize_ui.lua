@@ -5,7 +5,7 @@ local ARC9ScreenScale = ARC9.ScreenScale
 -- Cycle the selected attachment
 function SWEP:CycleSelectedAtt(amt, cyc)
     local activetab = self.CustomizeButtons[self.CustomizeTab + 1]
-    if !(activetab.customize or activetab.personalize) then return end 
+    if !(activetab.customize or activetab.personalize) then return end
 
     cyc = cyc or 0
     if #self.AttachmentAddresses <= 0 then return end
@@ -58,7 +58,7 @@ end
 
 local deadzonex = GetConVar("arc9_hud_deadzonex")
 
-SWEP.CustomizeButtons = {
+SWEP.CustomizeButtonsOriginal = {
     {
         title = "customize.panel.customize",
         func = function(self2)
@@ -212,6 +212,8 @@ SWEP.CustomizeButtons = {
     },
 }
 
+SWEP.CustomizeButtons = table.Copy(SWEP.CustomizeButtonsOriginal)
+
 SWEP.TabPanel = nil
 
 function SWEP:ClearTabPanel()
@@ -241,12 +243,14 @@ local lastmousey = 0
 
 local dragging = false
 local dragging_r = false
+local dragging_m = false
 
 SWEP.CustomizePanX = 0
 SWEP.CustomizePanY = 0
 
 SWEP.CustomizePitch = 0
 SWEP.CustomizeYaw = 0
+SWEP.CustomizeRoll = 0
 
 SWEP.CustomizeZoom = 0
 
@@ -286,8 +290,8 @@ hook.Add("StartCommand", "ARC9_GamepadHUD", function(ply, cmd)
                     Press1 = false
                 end
             end
-            if cmd:KeyDown(IN_RELOAD) then
-                cmd:RemoveKey(IN_RELOAD)
+            if cmd:KeyDown(IN_USE) then
+                cmd:RemoveKey(IN_USE)
                 if !Press2 then
                     gui.InternalMousePressed(MOUSE_RIGHT)
                     Press2 = true
@@ -401,7 +405,7 @@ function SWEP:CreateCustomizeHUD()
 
         self.CustomizeZoom = math.Clamp(self.CustomizeZoom, -64, 64)
     end
-    
+
     bg:SetMouseInputEnabled(true)
 
     table.Empty(SeasonalHalloween)
@@ -684,11 +688,6 @@ function SWEP:CreateCustomizeHUD()
         ]]
 
         if ARC9.ControllerMode() then
-            surface.SetTextPos(ARC9ScreenScale(4), ARC9ScreenScale(4))
-            surface.SetTextColor(ARC9.GetHUDColor("fg"))
-            surface.SetFont("ARC9_8")
-            surface.DrawText(ARC9:GetPhrase("customize.hint.controller"))
-
             --[[surface.SetMaterial(Material("arc9/gamepad/corner.png", ""))
             surface.SetDrawColor(255, 255, 255, 255)
 
@@ -718,7 +717,7 @@ function SWEP:CreateCustomizeHUD()
 
             local mousex, mousey = input.GetCursorPos()
 
-            local s = ARC9ScreenScale(10) - self.CustomizeZoom*1.5
+            local s = ARC9ScreenScale(10) - self.CustomizeZoom * 1.5
 
 
             if mousex >= x - s and mousex <= x + s and mousey >= y - (s / 2) and mousey <= y + (s / 2) then
@@ -746,12 +745,10 @@ function SWEP:CreateCustomizeHUD()
 
                 local atttbl = self:GetFinalAttTable(ms_slot)
 
-                local attpos, attang = self:GetAttachmentPos(slot, false, false, true)
+                local attpos, attang, icon_offset = self:GetAttachmentPos(slot, false, false, true)
                 local attposOffset = attpos
 
-                local icon_offset = slot.Icon_Offset or Vector(0, 0, 0)
-
-                icon_offset = icon_offset + (atttbl.IconOffset or vector_origin)
+                icon_offset = icon_offset + (atttbl.IconOffset or atttbl.Icon_Offset or vector_origin)
 
                 attposOffset = attposOffset + attang:Right() * icon_offset.y
                 attposOffset = attposOffset + attang:Up() * icon_offset.z
@@ -765,9 +762,10 @@ function SWEP:CreateCustomizeHUD()
                 local x, y = toscreenOffset.x, toscreenOffset.y
                 local xUOS, yUOS = toscreen.x, toscreen.y -- unoffsetted
 
-                local s = ARC9ScreenScale(16) - self.CustomizeZoom*1.5
+                local s = ARC9ScreenScale(16) - self.CustomizeZoom * 1.5
 
                 local hoveredslot = false
+                ms_slot.fuckinghovered = false
 
                 local dist = 0
 
@@ -783,13 +781,14 @@ function SWEP:CreateCustomizeHUD()
 
                             if d2 < dist then
                                 hoveredslot = false
+                                ms_slot.fuckinghovered = false
                                 break
                             end
                         end
                     end
                 end
 
-                if mousey > (ScrH() - ARC9ScreenScale(64)) then hoveredslot = false end
+                if mousey > (ScrH() - ARC9ScreenScale(64)) then hoveredslot = false ms_slot.fuckinghovered = false end
 
                 table.insert(bumpy, {x = x, y = y, slot = slot})
 
@@ -807,9 +806,18 @@ function SWEP:CreateCustomizeHUD()
                 end
 
                 if hoveredslot then
+                    ms_slot.fuckinghovered = true
+                    self.CustomizeLastHoveredSlot2 = ms_slot
+
                     self.CustomizeHints["customize.hint.select"] = "customize.hint.expand"
+                    self.CustomizeHints["customize.hint.random"] = "customize.hint.randomize"
                     if slot.Installed then
                         self.CustomizeHints["customize.hint.deselect"] = "customize.hint.unattach"
+                        if atttbl.ToggleStats and !atttbl.AdvancedCamoSupport then
+							self.CustomizeHints["customize.hint.toggleatts"] = "hud.hint.toggleatts"
+                        elseif atttbl.ToggleStats and (atttbl.AdvancedCamoSupport and self.AdvancedCamoCache) then
+                            self.CustomizeHints["customize.hint.toggleatts"] = "hud.hint.togglecamos"
+                        end
                     end
                 end
 
@@ -850,8 +858,8 @@ function SWEP:CreateCustomizeHUD()
                             if p.Installed then isparenttosomething = true end
                         end
 
-                        if isparenttosomething then 
-                            s = s * 0.6 
+                        if isparenttosomething then
+                            s = s * 0.6
                             col = ARC9.GetHUDColor("hi", 75)
                         end
                     end
@@ -862,7 +870,7 @@ function SWEP:CreateCustomizeHUD()
                     surface.SetDrawColor(col)
                     surface.DrawTexturedRect(x, y, s, s)
 
-                    local atttxt = ms_slot.PrintName or "SLOT"
+                    local atttxt = ARC9:GetPhrase(ms_slot.PrintName) or ms_slot.PrintName or "SLOT"
 
                     if ms_slot.Installed then
                         atttxt = ARC9:GetPhraseForAtt(ms_slot.Installed, "CompactName")
@@ -979,13 +987,30 @@ function SWEP:CreateCustomizeHUD()
                 self.CustomizePitch = self.CustomizePitch - (dx / ARC9ScreenScale(4)) * 3
                 -- self.CustomizeYaw = math.Clamp(self.CustomizeYaw + (dy / ARC9ScreenScale(8)) * (math.floor(self.CustomizePitch / 90) % 2 == 0 and 1 or -1), -30, 30)
                 self.CustomizeYaw = self.CustomizeYaw + (dy / ARC9ScreenScale(8)) * 3
-
             end
-        elseif self:GetOwner():KeyDown(IN_RELOAD) then
+        
+        elseif dragging_m then
+            self2:SetCursor("sizenesw")
+
+            if !input.IsMouseDown(MOUSE_MIDDLE) then
+                dragging_m = false
+            else
+                local mousex, mousey = input.GetCursorPos()
+
+                local dx = mousex - lastmousex
+                local dy = mousey - lastmousey
+
+                self.CustomizeRoll = self.CustomizeRoll + (dx / ARC9ScreenScale(8)) * 3
+            end
+        elseif input.IsKeyDown(KEY_R) and self2:IsHovered() then
+            if self.CustomizeLastHoveredSlot2 then
+                if self.CustomizeLastHoveredSlot2.fuckinghovered then return end
+            end
             self.CustomizePanX = Lerp(0.25, self.CustomizePanX, 0)
             self.CustomizePanY = Lerp(0.25, self.CustomizePanY, 0)
             self.CustomizePitch = Lerp(0.25, self.CustomizePitch, 0)
             self.CustomizeYaw = Lerp(0.25, self.CustomizeYaw, 0)
+            self.CustomizeRoll = Lerp(0.25, self.CustomizeRoll, 0)
             self.CustomizeZoom = Lerp(0.25, self.CustomizeZoom, 0)
         elseif !anyhovered then
             self2:SetCursor("arrow")
@@ -994,8 +1019,14 @@ function SWEP:CreateCustomizeHUD()
                 dragging = true
                 lastmousex, lastmousey = input.GetCursorPos()
             end
+
             if input.IsMouseDown(MOUSE_RIGHT) and !rmbdown and self2:IsHovered() then
                 dragging_r = true
+                lastmousex, lastmousey = input.GetCursorPos()
+            end
+
+            if input.IsMouseDown(MOUSE_MIDDLE) and !rmbdown and self2:IsHovered() then
+                dragging_m = true
                 lastmousex, lastmousey = input.GetCursorPos()
             end
         elseif anyhovered then
@@ -1014,7 +1045,7 @@ function SWEP:CreateCustomizeHUD()
 
     local trolling = ""
     if ARC9.ControllerMode() then
-        trolling = {
+        trolling = { -- Controller Mode
             {
                 action = "customize.hint.select",
                 glyph = ARC9.GetBindKey("+jump"),
@@ -1022,7 +1053,7 @@ function SWEP:CreateCustomizeHUD()
             },
             {
                 action = "customize.hint.deselect",
-                glyph = ARC9.GetBindKey("+reload"),
+                glyph = ARC9.GetBindKey("+use"),
                 hidden = true,
             },
             {
@@ -1033,23 +1064,50 @@ function SWEP:CreateCustomizeHUD()
             },
             {
                 action = "customize.hint.pan",
-                glyph = ARC9.GetBindKey("+use"),
-                glyph2 = "shared_lstick",
+                glyph = ARC9.GetBindKey("+attack"),
+                glyph2 = "shared_touch",
                 row2 = true,
             },
             {
                 action = "customize.hint.rotate",
-                glyph = "shared_lstick",
+                glyph = ARC9.GetBindKey("+attack2"),
+                glyph2 = "shared_touch",
                 row2 = true,
             },
             {
-                action = "customize.hint.cursor",
-                glyph = "shared_rstick",
-                row2 = true,
+                action = "customize.hint.recenter",
+                glyph = ARC9.GetBindKey("+reload"),
+                row3 = true,
+            },
+            {
+                action = "customize.hint.cycle",
+                glyph = ARC9.GetBindKey("+showscores"),
+                row3 = true,
+            },
+            {
+                action = "customize.hint.last",
+                glyph = ARC9.GetBindKey("+use"),
+                glyph2 = ARC9.GetBindKey("+showscores"),
+                row3 = true,
+            },
+            {
+                action = "customize.hint.favorite",
+                glyph = ARC9.GetBindKey("impulse 100"),
+                hidden = true,
+            },
+            {
+                action = "customize.hint.random",
+                glyph = ARC9.GetBindKey("+reload"),
+                hidden = true,
+            },
+            {
+                action = "customize.hint.toggleatts",
+                glyph = ARC9.GetBindKey("+zoom"),
+                hidden = true,
             },
         }
     else
-        trolling = {
+        trolling = { -- Mouse & Keyboard
             {
                 action = "customize.hint.select",
                 glyph = ARC9.GetBindKey("+attack"),
@@ -1099,15 +1157,25 @@ function SWEP:CreateCustomizeHUD()
                 glyph = ARC9.GetBindKey("impulse 100"),
                 hidden = true,
             },
+            {
+                action = "customize.hint.random",
+                glyph = ARC9.GetBindKey("+reload"),
+                hidden = true,
+            },
+            {
+                action = "customize.hint.toggleatts",
+                glyph = ARC9.GetBindKey("+use"),
+                hidden = true,
+            },
         }
     end
 
-    
+
     local tips = {
         "tips.custombinds",
         "tips.blacklist",
         "tips.hints",
-        "tips.lean",
+        -- "tips.lean",
         "tips.discord",
         "tips.arc-9",
         "tips.development",
@@ -1129,7 +1197,7 @@ function SWEP:CreateCustomizeHUD()
     local tipfade = 0
     local tipcurrent = math.random(0, #tips)
     local tiplast = 0
-    
+
     local hintspanel = vgui.Create("DPanel", bg)
     -- hintspanel:SetSize(ARC9ScreenScale(225), ARC9ScreenScale(100))
     -- hintspanel:SetPos(-ARC9ScreenScale(170), -ARC9ScreenScale(40)) -- w = scrw-ARC9Scr
@@ -1165,36 +1233,41 @@ function SWEP:CreateCustomizeHUD()
             if hid then continue end
             if ARC9.CTRL_Lookup[v.glyph] then v.glyph = ARC9.CTRL_Lookup[v.glyph] end
             if ARC9.CTRL_ConvertTo[v.glyph] then v.glyph = ARC9.CTRL_ConvertTo[v.glyph] end
-            if ARC9.CTRL_Exists[v.glyph] then v.glyph = Material("arc9/glyphs_light/" .. v.glyph .. "_lg" .. ".png", "smooth") end
+            if ARC9.CTRL_Exists[v.glyph] then v.glyph = Material( "arc9/" .. ARC9.GlyphFamilyCust() .. v.glyph .. ".png", "mips smooth" ) end
             if v.glyph2 then
                 if ARC9.CTRL_Lookup[v.glyph2] then v.glyph2 = ARC9.CTRL_Lookup[v.glyph2] end
                 if ARC9.CTRL_ConvertTo[v.glyph2] then v.glyph2 = ARC9.CTRL_ConvertTo[v.glyph2] end
-                if ARC9.CTRL_Exists[v.glyph2] then v.glyph2 = Material("arc9/glyphs_light/" .. v.glyph2 .. "_lg" .. ".png", "smooth") end
+                if ARC9.CTRL_Exists[v.glyph2] then v.glyph2 = Material( "arc9/" .. ARC9.GlyphFamilyCust() .. v.glyph2 .. ".png", "mips smooth" ) end
             end
 
             if v.row3 then
-                table.insert(ToAdd3, { v.glyph, ARC9ScreenScale(12) })
+                table.insert(ToAdd3, { v.glyph, ARC9ScreenScale(8) })
                 if v.glyph2 then
-                    table.insert(ToAdd3, " ")
-                    table.insert(ToAdd3, { v.glyph2, ARC9ScreenScale(12) })
+                    table.insert(ToAdd3, "  ")
+                    table.insert(ToAdd3, { v.glyph2, ARC9ScreenScale(8) })
                 end
-                table.insert(ToAdd3, " " ..  ARC9:GetPhrase(self.CustomizeHints[v.action] or v.action) .. "    ")
+                table.insert(ToAdd3, "  " ..  ARC9:GetPhrase(self.CustomizeHints[v.action] or v.action) .. "    ")
             elseif v.row2 then
-                
+                table.insert(ToAdd2, { v.glyph, ARC9ScreenScale(8) })
+                if v.glyph2 then
+                    table.insert(ToAdd2, "  ")
+                    table.insert(ToAdd2, { v.glyph2, ARC9ScreenScale(8) })
+                end
+                table.insert(ToAdd2, "  " ..  ARC9:GetPhrase(self.CustomizeHints[v.action] or v.action) .. "    ")
             else
-                table.insert(ToAdd, { v.glyph, ARC9ScreenScale(12) })
+                table.insert(ToAdd, { v.glyph, ARC9ScreenScale(8) })
                 if v.glyph2 then
                     table.insert(ToAdd, " ")
-                    table.insert(ToAdd, { v.glyph2, ARC9ScreenScale(12) })
+                    table.insert(ToAdd, { v.glyph2, ARC9ScreenScale(8) })
                 end
-                table.insert(ToAdd, " " .. ARC9:GetPhrase(self.CustomizeHints[v.action] or v.action) .. "    ")
+                table.insert(ToAdd, "  " .. ARC9:GetPhrase(self.CustomizeHints[v.action] or v.action) .. "    ")
             end
         end
 
-        local strreturn = CreateControllerKeyLine({x = self2:GetWide(), y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, ARC9.GetHUDColor("hint"), unpack(ToAdd3)) -- ghost     text only to get width
+        local strreturn = CreateControllerKeyLine({x = self2:GetWide(), y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, Color(255,255,255,175), unpack(ToAdd3)) -- ghost     text only to get width
 
         if !table.IsEmpty(ToAdd) then
-            CreateControllerKeyLine({x = ARC9ScreenScale(8), y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, ARC9.GetHUDColor("hint"), unpack(ToAdd))
+            CreateControllerKeyLine({x = ARC9ScreenScale(8), y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, Color(255,255,255,175), unpack(ToAdd))
             tipalpha = 0
         else
             -- tips
@@ -1204,17 +1277,17 @@ function SWEP:CreateCustomizeHUD()
                     tipcurrent = tipcurrent + 1
                 end
 
-                tipalpha = math.min(tipalpha + FrameTime() * 300, 100)
+                tipalpha = math.min(tipalpha + FrameTime() * 300, 175)
                 tipfade = math.min((tiplast-CurTime()) / tipdelay, 0.025) * 40 * tipalpha
                 local tiptext = ARC9:GetPhrase(tips[tipcurrent%(#tips)+1])
 
                 surface.SetMaterial(mat_info)
                 surface.SetDrawColor(ARC9.GetHUDColor("fg", tipalpha))
                 surface.DrawTexturedRect(ARC9ScreenScale(8), ARC9ScreenScale(2), ARC9ScreenScale(10), ARC9ScreenScale(10))
-				
+
 				-- local btw = surface.GetTextSize(tiptext)
 				-- local bw, bh = btw + ARC9ScreenScale(4), ARC9ScreenScale(10)
-				
+
                 -- surface.SetDrawColor(ARC9.GetHUDColor("shadow", (tipalpha * 3)))
                 -- surface.DrawRect(ARC9ScreenScale(20), ARC9ScreenScale(1.5), bw, bh)
 
@@ -1227,7 +1300,9 @@ function SWEP:CreateCustomizeHUD()
             end
         end
 
-        CreateControllerKeyLine({x = self2:GetWide() - ARC9ScreenScale(8)-strreturn , y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, ARC9.GetHUDColor("hint"), unpack(ToAdd3))
+        CreateControllerKeyLine({x = self2:GetWide() - ARC9ScreenScale(8)-strreturn , y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, Color(255,255,255,175), unpack(ToAdd3))
+		
+        -- CreateControllerKeyLine({x = self2:GetWide() - ARC9ScreenScale(250)-strreturn , y = ARC9ScreenScale(2), size = ARC9ScreenScale(10), font = "ARC9_10", font_keyb = "ARC9_KeybindPreview_Cust" }, ARC9.GetHUDColor("hint", 255), unpack(ToAdd2))
 
         table.Empty(self.CustomizeHints)
     end
@@ -1316,12 +1391,12 @@ function SWEP:CreateHUD_RHP()
 
         -- class
         surface.SetFont("ARC9_12")
-        local tw2 = surface.GetTextSize(self.Class or "No class ??? wtf")
+        local tw2 = surface.GetTextSize(ARC9:GetPhrase(self.Class) or self.Class or "No class ??? wtf")
 
         surface.SetFont("ARC9_12")
         surface.SetTextPos(w/2 - tw2/2, ARC9ScreenScale(25))
         surface.SetTextColor(ARC9.GetHUDColor("fg"))
-        surface.DrawText(self.Class or "No class ??? wtf")
+        surface.DrawText(ARC9:GetPhrase(self.Class) or self.Class or "No class ??? wtf")
 
         surface.SetDrawColor(ARC9.GetHUDColor("bg"))
         surface.DrawRect(w/2 - tw2/2, ARC9ScreenScale(23), tw2, ARC9ScreenScale(1.5))
@@ -1340,17 +1415,43 @@ function SWEP:CreateHUD_RHP()
     end
 
     local deadzonexx = deadzonex:GetInt()
+    local lighthintbrightness = 0
 
     local topleft_panel = vgui.Create("DPanel", bg)
     self.CustomizeHUD.topleft_panel = topleft_panel
     topleft_panel:SetPos(-ARC9ScreenScale(70) + deadzonexx, -ARC9ScreenScale(40)) -- w = 0, h = 0
     topleft_panel:MoveTo(deadzonexx, 0.1, 0.4, 0, 0.1, nil)
-    topleft_panel:SetSize(ARC9ScreenScale(70+29), ARC9ScreenScale(40))
+    topleft_panel:SetSize(ARC9ScreenScale(70+40), ARC9ScreenScale(40 + 29))
     topleft_panel:MoveToFront()
-    topleft_panel.Paint = function(self2, w, h) end
+    topleft_panel.Paint = function(self2, w, h) 
+	
+		if ARC9.ControllerMode() then
+			surface.SetFont("ARC9_8")
+			surface.SetTextColor(ARC9.GetHUDColor("fg"))
+			surface.SetTextPos(ARC9ScreenScale(4), ARC9ScreenScale(4))
+			surface.DrawText(ARC9:GetPhrase("customize.hint.controller"))
+		end
+
+        if self2.topleft_light and self2.topleft_light:IsHovered() and GetConVar("arc9_cust_light"):GetBool() then
+            lighthintbrightness = math.Approach(lighthintbrightness, 1, FrameTime() * 10)
+        else
+            lighthintbrightness = math.Approach(lighthintbrightness, 0, FrameTime() * 10)
+		end
+
+        if lighthintbrightness > 0 then
+            local clt = (math.Round(GetConVar("arc9_cust_light_brightness"):GetFloat(), 3) + 20) * 2 .. "%"
+
+            surface.SetFont("ARC9_8")
+            local cltw = surface.GetTextSize(clt)
+            surface.SetTextPos(ARC9ScreenScale(47.5 + 21/2) - cltw /2, ARC9ScreenScale(42))
+            surface.SetTextColor(255, 255, 255, lighthintbrightness * 255)
+            surface.DrawText(clt)
+        end
+	end
 
     local topleft_settings = vgui.Create("ARC9TopButton", topleft_panel)
     topleft_settings:SetPos(ARC9ScreenScale(19), ARC9ScreenScale(19))
+    topleft_settings:SetNotif(ARC9.BadPerfromanceSettings())
     topleft_settings.DoClick = function(self2)
         surface.PlaySound(popupsound)
         ARC9_OpenSettings()
@@ -1365,10 +1466,21 @@ function SWEP:CreateHUD_RHP()
     topleft_light:SetIsCheckbox(true)
     topleft_light:SetConVar("arc9_cust_light")
     topleft_light:SetValue(GetConVar("arc9_cust_light"):GetBool())
+    topleft_panel.topleft_light = topleft_light
     local oldlightdoclick = topleft_light.DoClick
     topleft_light.DoClick = function(self2)
         oldlightdoclick(self2)
+
+        topleft_light:SetCursor(self2:GetChecked() and "sizens" or "hand")
+
         surface.PlaySound(self2:GetChecked() and lightonsound or lightoffsound)
+    end    
+
+    topleft_light.OnMouseWheeled = function(self2, state)
+        if state != 0 then
+            surface.PlaySound(hoversound)
+            RunConsoleCommand("arc9_cust_light_brightness", math.Clamp(GetConVar("arc9_cust_light_brightness"):GetFloat() + state * 0.5, -20, 30))
+        end
     end
 
     if ARC9.Dev(0) and ARC9.ATTsHaveBeenReloaded then

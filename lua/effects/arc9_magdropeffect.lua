@@ -6,19 +6,25 @@ EFFECT.AlreadyPlayedSound = false
 EFFECT.LifeTime = 3
 EFFECT.SpawnTime = 0
 
+EFFECT.VMContext = true
+
+local arc9_eject_time = GetConVar("arc9_eject_time")
+
+local FormatViewModelAttachment = ARC9.FormatViewModelAttachment
 
 function EFFECT:Init(data)
     local att = data:GetAttachment()
     local ent = data:GetEntity()
 
     if !IsValid(ent) then self:Remove() return end
-    if !IsValid(ent:GetOwner()) then self:Remove() return end
+    local owner, lp = ent:GetOwner(), LocalPlayer()
+    if !IsValid(owner) then self:Remove() return end
 
-    if ent:GetOwner() != LocalPlayer() or LocalPlayer():ShouldDrawLocalPlayer() then
+    if owner != lp or lp:ShouldDrawLocalPlayer() then
         mdl = (ent.WModel or {})[1] or ent
         self.VMContext = false
     else
-        mdl = LocalPlayer():GetViewModel()
+        mdl = lp:GetViewModel()
 
         if ent:ShouldTPIK() then
             self.VMContext = false
@@ -33,6 +39,11 @@ function EFFECT:Init(data)
 
     local origin, ang = mdl:GetAttachment(att).Pos, mdl:GetAttachment(att).Ang
 
+    if (lp:ShouldDrawLocalPlayer() or owner != lp) then
+        wm = true
+        self.VMContext = false
+    end
+    
     local model = ent:GetProcessedValue("DropMagazineModel", true)
     local skinn = ent:GetProcessedValue("DropMagazineSkin", true)
     local sounds = ent:GetProcessedValue("DropMagazineSounds", true)
@@ -49,15 +60,14 @@ function EFFECT:Init(data)
     origin:Add(ang:Up() * correctpos.y)
     origin:Add(ang:Forward() * correctpos.z)
 
+    if self.VMContext then origin = FormatViewModelAttachment(origin, false) end
     self:SetPos(origin)
     self:SetModel(model or "")
     self:SetSkin(skinn)
     self:DrawShadow(true)
     self:SetAngles(ang)
 
-    if self.VMContext then
-        self:SetNoDraw(true)
-    end
+    if self.VMContext then self:SetNoDraw(true) end
 
     self.Sounds = sounds or ARC9.ShellSoundsTable
 
@@ -80,11 +90,7 @@ function EFFECT:Init(data)
     if !IsValid(phys) then self:Remove() return end
     phys:Wake()
 
-    local plyvel = vector_origin
-
-    if IsValid(ent.Owner) then
-        plyvel = ent.Owner:GetAbsVelocity()
-    end
+    local plyvel = owner:GetAbsVelocity() * 1.1
 
     -- phys:SetDamping(0, 0)
     -- phys:SetMass(1)
@@ -104,6 +110,9 @@ function EFFECT:Init(data)
     -- phys:AddAngleVelocity(ang:Up() * 2500 * velocity/0.75)
 
     self.SpawnTime = CurTime()
+    self.LifeTime = self.LifeTime + arc9_eject_time:GetFloat()
+
+    self.weapon = ent -- for camos
 end
 
 function EFFECT:PhysicsCollide()
@@ -121,21 +130,48 @@ function EFFECT:PhysicsCollide()
 end
 
 function EFFECT:Think()
-    if self:GetVelocity():Length() > 20 then self.SpawnTime = CurTime() end
+    local vel = self:GetVelocity()
+    local vellength = vel:Length()
+    local ct = CurTime()
+    if vellength > 20 then self.SpawnTime = ct end
+    if vellength < 5 and self.VMContext then self.VMContext = false self:SetNoDraw(false) end
+
     self:StopSound("Default.ScrapeRough")
     
-    if (self.SpawnTime + self.LifeTime) <= CurTime() then
+    if (self.SpawnTime + self.LifeTime) <= ct then
         if !IsValid(self) then return end
         self:SetRenderFX( kRenderFxFadeFast )
-        if (self.SpawnTime + self.LifeTime + 0.25) <= CurTime() then
+        if (self.SpawnTime + self.LifeTime + 0.25) <= ct then
             if !IsValid(self:GetPhysicsObject()) then return end
             self:GetPhysicsObject():EnableMotion(false)
-            if (self.SpawnTime + self.LifeTime + 0.5) <= CurTime() then
+            if (self.SpawnTime + self.LifeTime + 0.5) <= ct then
                 self:Remove()
                 return
             end
         end
     end
+
+    -- fake collisions
+    -- (for some reason effects collide only with brushes)
+    if !self.AlreadyPlayedSound and (self.NextPhysCheck or 0) < ct then
+        self.NextPhysCheck = ct + FrameTime() * 2
+        local poss = self:GetPos()
+        local tr = util.TraceLine({
+            start = poss,
+            endpos = poss + (vel * 0.05),
+            mask = MASK_PLAYERSOLID,
+            filter = LocalPlayer()
+        })
+
+        -- debugoverlay.Line(poss, tr.HitPos)
+        
+        if tr.Hit and tr.HitTexture == "**studio**" then
+            tr.HitNormal = tr.Normal * -2
+            self:PhysicsCollide(tr)
+        end
+    end
+
+
     return true
 end
 

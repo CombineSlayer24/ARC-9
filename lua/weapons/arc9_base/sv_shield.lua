@@ -14,14 +14,10 @@ function SWEP:CreateShield()
     self.ShieldProp = shield
 
     local bonename = self:GetProcessedValue("ShieldBone", true)
-
     local boneindex = self:GetOwner():LookupBone(bonename)
-
     local bpos, bang = self:GetOwner():GetBonePosition(boneindex)
-
     local pos = self:GetProcessedValue("ShieldOffset", true)
     local ang = self:GetProcessedValue("ShieldAngle", true)
-
     local newpos = Vector(pos)
 
     newpos.y = -newpos.y
@@ -32,12 +28,12 @@ function SWEP:CreateShield()
     shield:FollowBone(self:GetOwner(), boneindex)
     shield:SetPos(apos)
     shield:SetAngles(self:GetOwner():GetAngles() + ang)
-
     shield:SetOwner(self:GetOwner())
 
-    shield:SetCollisionGroup(COLLISION_GROUP_WORLD)
-    shield:SetSolid(SOLID_NONE)
-    shield:SetMoveType(MOVETYPE_NONE)
+    shield:SetRenderMode(RENDERMODE_TRANSCOLOR)
+    shield:SetMoveType( MOVETYPE_NOCLIP )
+    shield:SetSolid( SOLID_NONE )
+    shield:SetCollisionGroup( COLLISION_GROUP_WORLD ) 
 
     if arc9_dev_show_shield:GetBool() then
         shield:SetColor(Color(0, 0, 0, 255))
@@ -51,11 +47,6 @@ function SWEP:CreateShield()
     shield:Spawn()
     shield:SetModelScale(self:GetProcessedValue("ShieldScale", true) or 1, 0.1)
     shield:Activate()
-
-    function shield:OnTakeDamage(damage)
-        self:PlayAnimation("blowback")
-    end
-
     self:SetShieldEntity(shield)
     self:GetOwner().ARC9ShieldEntity = shield
 end

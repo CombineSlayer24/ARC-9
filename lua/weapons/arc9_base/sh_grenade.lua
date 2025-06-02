@@ -2,6 +2,11 @@ function SWEP:ThinkGrenade()
     if !self:GetProcessedValue("Throwable", true) then return end
     local owner = self:GetOwner()
 
+    owner.ARC9QuickthrowPls = nil 
+    local QuicknadeBind = owner:KeyDown(IN_GRENADE1)
+
+	if self:GetSafe() and owner:KeyPressed(IN_ATTACK) then self:ToggleSafety(false) return end
+	
     if IsValid(self:GetDetonatorEntity()) then
         if owner:KeyPressed(IN_ATTACK) then
             self:TouchOff()
@@ -30,27 +35,32 @@ function SWEP:ThinkGrenade()
     if !self:GetGrenadePrimed() then
         if self:GetAnimLockTime() > CurTime() then return end
 
+        local throwanimspeed = self:GetProcessedValue("ThrowAnimSpeed", true)
         if self:GetGrenadeRecovering() then
             if self:GetProcessedValue("Disposable", true) and !self:HasAmmoInClip() and !IsValid(self:GetDetonatorEntity()) and SERVER then
                 self:Remove()
                 owner:ConCommand("lastinv") -- switch to prev weapon
+            elseif self.WasThrownByBind then
+                self.WasThrownByBind = nil
+                self:Holster(owner:GetPreviousWeapon())
+                -- owner:ConCommand("lastinv") -- switch to prev weapon man we dont need dis shid!!
             else
-                self:PlayAnimation("draw", self:GetProcessedValue("ThrowAnimSpeed"), true)
+                self:PlayAnimation("draw", throwanimspeed, true)
                 self:SetGrenadeRecovering(false)
             end
         elseif ((tossable and owner:KeyDown(IN_ATTACK2)) or
         owner:KeyDown(IN_ATTACK)) and
             self:HasAmmoInClip() and
             (!owner:KeyDown(IN_USE) or !self:GetProcessedValue("PrimaryBash", true)) and
-            !IsValid(self:GetDetonatorEntity())
+            !IsValid(self:GetDetonatorEntity()) and !self:RunHook("HookP_BlockFire") 
             then
             self:SetGrenadePrimed(true)
             self:SetGrenadePrimedTime(CurTime())
 
             if owner:KeyDown(IN_ATTACK2) and self:HasAnimation("pullpin_toss") then
-                self:PlayAnimation("pullpin_toss", self:GetProcessedValue("ThrowAnimSpeed"), true)
+                self:PlayAnimation("pullpin_toss", throwanimspeed, true)
             else
-                self:PlayAnimation("pullpin", self:GetProcessedValue("ThrowAnimSpeed"), true)
+                self:PlayAnimation("pullpin", throwanimspeed, true)
             end
             self:SetGrenadeTossing(owner:KeyDown(IN_ATTACK2))
         end
@@ -58,11 +68,11 @@ function SWEP:ThinkGrenade()
         if self:GetAnimLockTime() > CurTime() then return end
 
         if self:GetGrenadeTossing() and (!owner:KeyDown(IN_ATTACK2) or self:GetProcessedValue("ThrowInstantly", true)) then
-            local t = self:PlayAnimation("toss", self:GetProcessedValue("ThrowAnimSpeed"), true)
+            local t = self:PlayAnimation("toss", throwanimspeed, true)
             local mp = self:GetAnimationEntry("toss").MinProgress or 0
             self:ThrowGrenade(ARC9.NADETHROWTYPE_TOSS, t * mp)
-        elseif !self:GetGrenadeTossing() and (!owner:KeyDown(IN_ATTACK) or self:GetProcessedValue("ThrowInstantly", true)) then
-            local t = self:PlayAnimation("throw", self:GetProcessedValue("ThrowAnimSpeed"), true)
+        elseif !self:GetGrenadeTossing() and (!(owner:KeyDown(IN_ATTACK) or QuicknadeBind) or self:GetProcessedValue("ThrowInstantly", true)) then
+            local t = self:PlayAnimation("throw", throwanimspeed, true)
             local mp = self:GetAnimationEntry("throw").MinProgress or 0
             self:ThrowGrenade(ARC9.NADETHROWTYPE_NORMAL, t * mp)
         end

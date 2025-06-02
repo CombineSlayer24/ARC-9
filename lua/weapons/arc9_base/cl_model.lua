@@ -1,4 +1,10 @@
 SWEP.ModelVersion = 0
+local v0, a0 = Vector(0, 0, 0), Angle(0, 0, 0)
+local wwWorldToLocal = WorldToLocal
+local llLocalToWorld = LocalToWorld
+
+SWEP.AttPosCache = {}
+-- SWEP.BonePosCache = {}
 
 function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, customang, dupli)
     dupli = dupli or 0
@@ -63,9 +69,11 @@ function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, cust
         atttbl = self:GetFinalAttTable(slottbl)
     end
 
-    local offset_pos = slottbl.Pos or Vector(0, 0, 0)
-    local offset_ang = slottbl.Ang or Angle(0, 0, 0)
-    local bpos, bang
+    local icon_offset = slottbl.Icon_Offset or v0
+
+    local offset_pos = slottbl.Pos or v0
+    local offset_ang = slottbl.Ang or a0
+    local bpos, bang = v0, a0
 
     if dupli > 0 then
         offset_pos = slottbl.DuplicateModels[dupli].Pos or offset_pos
@@ -74,45 +82,68 @@ function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, cust
         bone = slottbl.DuplicateModels[dupli].Bone or bone
     end
 
+    local selfpos, selfang = self:GetPos(), self:GetAngles()
+
     if parentmdl and bone then
-        local boneindex = parentmdl:LookupBone(bone)
+        -- local bonecached = false 
 
-        if !boneindex then return vector_origin, angle_zero end
+        -- local possiblebonecache = self.BonePosCache[bone] -- bone cache
+        -- if possiblebonecache then
+        --     if (possiblebonecache[3] or 0) > CurTime() then
+        --         bpos, bang = llLocalToWorld(possiblebonecache[1], possiblebonecache[2], selfpos, selfang)
+        --         bonecached = true
+        --     end
+        -- end
 
-        if parentmdl == self:GetOwner() then
-            parentmdl:SetupBones()
-            parentmdl:InvalidateBoneCache()
-        end
-        local bonemat = parentmdl:GetBoneMatrix(boneindex)
-        if bonemat then
-            bpos = bonemat:GetTranslation()
-            bang = bonemat:GetAngles()
-        end
+        -- if !bonecached then
+            local boneindex = parentmdl:LookupBone(bone)
+
+            if !boneindex then return v0, a0, v0 end
+
+            if parentmdl == self:GetOwner() then
+                parentmdl:SetupBones()
+                parentmdl:InvalidateBoneCache()
+            end
+            local bonemat = parentmdl:GetBoneMatrix(boneindex)
+            if bonemat then
+                bpos = bonemat:GetTranslation()
+                bang = bonemat:GetAngles()
+            end
+
+            if !bang or !bpos then
+                bang = selfang
+                bpos = selfpos
+            end
+
+            -- local xpos, xang = wwWorldToLocal(bpos, bang, selfpos, selfang) -- bone cache
+            -- self.BonePosCache[bone] = {xpos, xang, CurTime() + 1}
+        -- end
     elseif custompos then
         bpos = custompos
-        bang = customang or Angle(0, 0, 0)
+        bang = customang or a0
+    end
+
+    local cust = self:GetCustomize()
+    local possiblecache = self.AttPosCache[slottbl.Address] -- att pos cache
+    if !cust and possiblecache then
+        if (possiblecache[4] or 0) > CurTime() then
+            local qpos, qang = llLocalToWorld(possiblecache[1], possiblecache[2], bpos, bang)
+            return qpos, qang, possiblecache[3]
+        end
     end
 
     if slottbl.OriginalAddress then
-        local eles = self:GetElements()
+        local eles = self:GetAttachmentElements()
 
-        for i, k in pairs(eles) do
-            local ele = self.AttachmentElements[i]
-
-            if !ele then continue end
-
+        for _, ele in ipairs(eles) do
             local mods = ele.AttPosMods or {}
 
             if mods[slottbl.OriginalAddress] then
                 offset_pos = mods[slottbl.OriginalAddress].Pos or offset_pos
                 offset_ang = mods[slottbl.OriginalAddress].Ang or offset_ang
+                icon_offset = mods[slottbl.OriginalAddress].Icon_Offset or icon_offset
             end
         end
-    end
-
-    if !bang or !bpos then
-        bang = self:GetAngles()
-        bpos = self:GetPos()
     end
 
     if wm then
@@ -131,7 +162,7 @@ function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, cust
     apos = apos + aang:Up() * offset_pos.z
 
     if !nomodeloffset then
-        offset_ang = offset_ang + (atttbl.ModelAngleOffset or angle_zero)
+        offset_ang = offset_ang + (atttbl.ModelAngleOffset or a0)
     end
 
     aang:Set(bang)
@@ -145,7 +176,7 @@ function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, cust
     aang:RotateAroundAxis(up, offset_ang.y)
 
     if !nomodeloffset then
-        local moffset = (atttbl.ModelOffset or Vector(0, 0, 0)) * (slottbl.Scale or 1)
+        local moffset = (atttbl.ModelOffset or v0) * (slottbl.Scale or 1)
         if wm then
             moffset = moffset * (self.WorldModelOffset.Scale or 1)
         end
@@ -171,7 +202,12 @@ function SWEP:GetAttachmentPos(slottbl, wm, idle, nomodeloffset, custompos, cust
     apos = data.pos or apos
     aang = data.ang or aang
 
-    return apos, aang
+    if slottbl.Address and !cust then -- att pos cache
+        local ypos, yang = wwWorldToLocal(apos, aang, bpos, bang)
+        self.AttPosCache[slottbl.Address] = {ypos, yang, icon_offset, CurTime() + 5}
+    end
+
+    return apos, aang, icon_offset
 end
 
 function SWEP:CreateAttachmentModel(wm, atttbl, slottbl, ignorescale, cm)
@@ -191,6 +227,8 @@ function SWEP:CreateAttachmentModel(wm, atttbl, slottbl, ignorescale, cm)
     csmodel.atttbl = atttbl
     csmodel.slottbl = slottbl
     csmodel.weapon = self -- for matproxy
+
+    csmodel.istranslucent = atttbl.TranslucentPass
 
     if atttbl.DrawFunc then
         csmodel.DrawFunc = atttbl.DrawFunc
@@ -222,8 +260,11 @@ function SWEP:CreateAttachmentModel(wm, atttbl, slottbl, ignorescale, cm)
         charmmodel.slottbl = slottbl
         charmmodel.weapon = self
 
-        charmmodel:SetBodyGroups(atttbl.CharmBodygroups)
+        charmmodel:SetBodyGroups(atttbl.CharmBodygroups or "") -- RUBAT THANK YOU FOR MAKING FUNC ERROR AFTER 10 YEARS OF STABLE WORK
         charmmodel:SetMaterial(atttbl.CharmMaterial)
+        if atttbl.CharmSkin then
+            charmmodel:SetSkin(atttbl.CharmSkin)
+        end
         charmmodel:SetNoDraw(true)
 
         local scale = Matrix()
@@ -271,6 +312,7 @@ function SWEP:CreateAttachmentModel(wm, atttbl, slottbl, ignorescale, cm)
         end
         vec:Mul(slottbl.Scale or 1)
         scale:Scale(vec)
+        csmodel.Scale = vec
         csmodel:EnableMatrix("RenderMultiply", scale)
     end
 
@@ -369,14 +411,14 @@ function SWEP:SetupModel(wm, lod, cm)
         end
 
         local csmodel = ClientsideModel(self.WorldModelMirror or self.ViewModel)
-
+        csmodel.weapon = self
         basemodel = csmodel
 
         if !IsValid(csmodel) then return end
 
         csmodel:SetNoDraw(true)
         csmodel.atttbl = {}
-
+        
         if cm then
             csmodel.slottbl = {
                 WMBase = true,
@@ -386,8 +428,8 @@ function SWEP:SetupModel(wm, lod, cm)
         else
             csmodel.slottbl = {
                 WMBase = true,
-                Pos = self.WorldModelOffset.TPIKPos or self.WorldModelOffset.Pos or Vector(0, 0, 0),
-                Ang = self.WorldModelOffset.TPIKAng or self.WorldModelOffset.Ang or Angle(-5, 0, 180)
+                Pos = self.WorldModelOffset.Pos or Vector(0, 0, 0),
+                Ang = self.WorldModelOffset.Ang or Angle(-5, 0, 180)
             }
         end
 
@@ -425,8 +467,9 @@ function SWEP:SetupModel(wm, lod, cm)
     if !wm and owner != LocalPlayer() then return end
     if lod > 0 then return end
 
-    for e, _ in pairs(self:GetElements()) do
-        local ele = self.AttachmentElements[e]
+    local eles = self:GetAttachmentElements()
+
+    for _, ele in ipairs(eles) do
 
         if !ele then continue end
         if !ele.Models then continue end
@@ -529,8 +572,15 @@ function SWEP:SetupModel(wm, lod, cm)
                 end
             end
             stickermodel:SetParent(stickerparent)
+            local stickermat = atttbl.StickerMaterial
 
-            stickermodel:SetMaterial(atttbl.StickerMaterial)
+            if self.StickersNoNocull then
+                local fakestickwithoutnocull = Material(stickermat)
+                fakestickwithoutnocull:SetInt("$flags", bit.band(fakestickwithoutnocull:GetInt("$flags"), bit.bnot(8192)))
+                fakestickwithoutnocull:Recompute()
+            end
+            
+            stickermodel:SetMaterial(stickermat)
 
             local tbl = {
                 Model = stickermodel,
@@ -547,10 +597,14 @@ function SWEP:SetupModel(wm, lod, cm)
 
         local dupli = slottbl.DuplicateModels or {}
 
+        local duplicheck = self:GetProcessedValue("Akimbo",true) or self:GetProcessedValue("DuplicateAttachments",true)
+
         for i = 0, #dupli do
             local csmodel = self:CreateAttachmentModel(wm, atttbl, slottbl, false, cm, dupli)
 
-            csmodel.Duplicate = i
+            if duplicheck  then
+                csmodel.Duplicate = i
+            end
 
             if atttbl.NoDraw then
                 csmodel.NoDraw = true
@@ -569,7 +623,9 @@ function SWEP:SetupModel(wm, lod, cm)
             if !cm and ((atttbl.LHIK or atttbl.RHIK) or atttbl.MuzzleDevice or atttbl.MuzzleDeviceUBGL) then
                 proxmodel = self:CreateAttachmentModel(wm, atttbl, slottbl, true)
                 proxmodel.NoDraw = true
-                proxmodel.Duplicate = i
+                if duplicheck then
+                    proxmodel.Duplicate = i
+                end
 
                 local scale = Matrix()
                 local vec = Vector(1, 1, 1) * (slottbl.Scale or 1) * (atttbl.Scale or 1)

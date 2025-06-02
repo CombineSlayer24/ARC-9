@@ -106,6 +106,14 @@ SWEP.WorldModelOffset = nil
 --     Ang = Angle(0, 0, 0),
 --     TPIKPos = Vector(0, 0, 0), -- arc9_tpik 1, you can make cool poses with it
 --     TPIKAng = Angle(0, 0, 0),
+-- 
+--     TPIKPosSightOffset = Vector(0, 0, 0), -- ironsights offset, disable NoTPIKVMPos
+--     TPIKPosReloadOffset = Vector(0, 0, 0), -- reload offset if arms stretching too much during reloads
+--     TPIKAngReloadOffset = Angle(0, 0, 0),
+--     TPIKHolsterOffset = Angle(0, 0, 0), -- for passive/normal holdtype
+
+--     TPIKPosAlternative = Vector(0, 0, 0) -- enabled with SWEP/ATT.TPIKAlternativePos = true
+-- 
 --     Scale = 1
 -- }
 SWEP.NoTPIK = false
@@ -113,6 +121,9 @@ SWEP.MirrorVMWMHeldOnly = false -- If true, MirrorVMWM is not activated when wea
 
 SWEP.TPIKParentToSpine4 = nil -- TPIK makes VM origin on right hand (which is located different on each holdtype, crouch jump run etc). Set to true if you want vm origin on spine bone
 SWEP.TPIKforcelefthand = nil -- TPIK does not do left hand when you have one of this holdtypes: slam magic pistol normal. Set to true to still do lhand tpik for those
+SWEP.TPIKforcenoreload = false -- TPIK does not force activate during reload
+SWEP.TPIKnolefthand = false -- Force no TPIK left hand
+SWEP.TPIKNoSprintAnim = nil -- Makes weapon wm be in idle while sprinting (use when animated sprint looks too bad from outside)
 SWEP.NoTPIKVMPos = false -- TPIK position is not affected by viewmodel position (Local player only)
 SWEP.Material = ""
 
@@ -120,6 +131,11 @@ SWEP.Crosshair = false
 SWEP.LauncherCrosshair = false -- Force the launcher crosshair
 SWEP.MissileCrosshair = false -- Force the missile launcher crosshair
 SWEP.ForceStandardCrosshair = nil -- Force default + or T crosshair no matter what!
+
+SWEP.CustomCrosshair = false -- Enables custom crosshair use.
+SWEP.CustomCrosshairSingle = false -- Enables a single image to be used as the custom crosshair.
+SWEP.CustomCrosshairMaterial = nil -- Point towards a file to use as the custom crosshair. Must use Material(PATH) format.
+SWEP.CustomCrosshairSize = 40 -- Changes the custom crosshair size. (Default 40)
 
 SWEP.ViewModelFOVBase = nil -- Set to override viewmodel FOV
 
@@ -165,10 +181,11 @@ SWEP.Distance = 33000 -- In Hammer units, how far bullets can travel, period.
 
 SWEP.CurvedDamageScaling = true -- If true, damage will scale in a quadratic curve between RangeMin and RangeMax. If false, damage will scale linearly.
 
-SWEP.SweetSpot = false
-SWEP.SweetSpotRange = 2500 -- Weapon deals this amount of damage when enemy is within the sweet spot range
-SWEP.SweetSpotDamage = 100
-SWEP.SweetSpotWidth = 500
+SWEP.SweetSpot = false -- Modifies damage if it's within a certain range, typically increasing it. Set this to enable
+SWEP.SweetSpotDamage = nil -- Damage at peak sweet spot
+SWEP.SweetSpotRange = nil -- Center of the sweet spot (should be larger than peak + width)
+SWEP.SweetSpotPeak = nil -- Within this much distance, sweet spot damage is maxed out
+SWEP.SweetSpotWidth = nil -- Sweet spot damage falls off over this much distance
 
 SWEP.DamageLookupTable = nil --[[ Example: {
     {
@@ -268,6 +285,10 @@ SWEP.ThrowTumble = true -- Grenade tumbles when thrown.
 
 SWEP.ThrowOnGround = false -- If set, entity's position and angles ignores vertical aim, and is lowered by up to 36 units onto the ground.
 
+SWEP.NoHolsterOnPrimed = nil  -- disallow holstering if pin in pulled
+
+SWEP.QuickSwapTo = nil -- Use on grenades, will make any arc9 holster 2 times faster to this swep
+
 SWEP.Detonator = false -- Set to true to give this weapon a detonator. After throwing out a grenade, you enter detonator mode.
 
 -------------------------- PHYS BULLET BALLISTICS
@@ -298,7 +319,7 @@ SWEP.PhysBulletModelStick = nil -- The amount of time a physbullet model will st
 SWEP.TracerNum = 1 -- Tracer every X
 SWEP.TracerFinalMag = 0 -- The last X bullets in a magazine are all tracers
 SWEP.TracerEffect = "ARC9_tracer" -- The effect to use for hitscan tracers
-SWEP.TracerColor = Color(255, 255, 255) -- Color of tracers. Only works if tracer effect supports it. For physical bullets, this is compressed down to 9-bit color.
+SWEP.TracerColor = Color(255, 255, 190) -- Color of tracers. Only works if tracer effect supports it. For physical bullets, this is compressed down to 9-bit color.
 SWEP.TracerSize = 1
 
 -------------------------- SHOOTPOS
@@ -389,6 +410,7 @@ SWEP.Firemodes = {
 }
 
 SWEP.NoFiremodeWhenEmpty = false -- Cannot switch firemode when empty
+SWEP.CantSafety = nil -- No safety on this gun
 
 SWEP.FiremodeAnimLock = false -- Firemode animation cannot be interrupted
 
@@ -433,6 +455,10 @@ SWEP.RecoilResetTime = 0.1 -- How long the gun must go before the recoil pattern
 SWEP.RecoilFullResetTime = 2 -- How long recoil must stay after last shoot
 
 SWEP.RecoilAutoControl = 1 -- Multiplier for automatic recoil control.
+SWEP.RecoilAutoControl_DontTryToReturnBack = nil -- If true will make recoil autocompensation not follow mouse   will make recoil be less sluggerish, but may cause crosshair to return in weird positions
+
+SWEP.RecoilPerShot = 1
+SWEP.RecoilMax = nil
 
 SWEP.PushBackForce = 0 -- Push the player back when shooting.
 
@@ -453,6 +479,7 @@ SWEP.UBGLFiremodeName = "UBGL"
 SWEP.UBGLChamberSize = 0
 SWEP.UBGLInsteadOfSights = false -- Right clicking fires UBGL instead of going into irons.
 SWEP.UBGLExclusiveSights = false -- Enable to allow only UBGLOnly sights to be used.
+SWEP.UBGLToggleTime = nil -- In seconds, how long of a delay between being able to toggle the UBGL.
 
 -- Otherwise, these are just stats that get overwritten when selecting a UBGL.
 SWEP.AmmoPerShotUBGL = 1
@@ -464,6 +491,20 @@ SWEP.ManualActionUBGL = false
 SWEP.ShouldDropMagUBGL = false
 SWEP.ShotgunReloadUBGL = false
 SWEP.HybridReloadUBGL = false
+SWEP.ShootEntUBGL = false
+SWEP.TracerNumUBGL = 0
+SWEP.TriggerDelayUBGL = false
+SWEP.PhysBulletModelUBGL = false
+SWEP.ShootEntForceUBGL = 10000
+SWEP.SweetSpotUBGL = false
+SWEP.RangeMinUBGL = 0
+SWEP.RangeMaxUBGL = 5000
+SWEP.DistanceUBGL = 33000
+SWEP.PenetrationUBGL = 5
+SWEP.DamageTypeUBGL = DMG_BULLET
+SWEP.ExplosionDamageUBGL = 0
+SWEP.ExplosionRadiusUBGL = 0
+SWEP.ExplosionEffectUBGL = false 
 
 -------------------------- VISUAL RECOIL
 
@@ -512,6 +553,12 @@ SWEP.VisualRecoilDoingFunc = nil -- wawa, override Up, Side, Roll here
 
 SWEP.RecoilKick = 1 -- Camera recoil
 SWEP.RecoilKickDamping = 70.151 -- Camera recoil damping
+SWEP.RecoilKickAffectPitch = nil -- thing for eft, set to true if you want camera go up (only visually) as recoil increases, SWEP.Recoil * SWEP.RecoilKick = effect of this
+
+-- Additional subtle visual recoil, in case your gun doesn't have animated fire. Acts like a second spring added on top with limited duration
+-- SWEP.SubtleVisualRecoil = 1 -- multiplier, set to something to enable this thing
+-- SWEP.SubtleVisualRecoilDirection = 0 -- roll angle, 5 is to right, -5 to left, 0 is nothing etc
+-- SWEP.SubtleVisualRecoilSpeed = 1 -- speed of it, be careful with this, 0.3 - 1.75
 
 -------------------------- SPREAD
 
@@ -520,14 +567,14 @@ SWEP.Spread = 0
 SWEP.UseDispersion = false -- Use this for shotguns - Additional random angle to spread, same for each pellet
 SWEP.DispersionSpread = 0.2 -- SWEP.Spread will be clump spread, and this will be dispersion of clump
 
-SWEP.SpreadAddMove = 0 -- Applied when speed is equal to walking speed.
-SWEP.SpreadAddMidAir = 0 -- Applied when not touching the ground.
-SWEP.SpreadAddHipFire = 0 -- Applied when not sighted.
-SWEP.SpreadAddSighted = 0 -- Applied when sighted. Can be negative.
-SWEP.SpreadAddBlindFire = 0 -- Applied when blind firing.
-SWEP.SpreadAddCrouch = 0 -- Applied when crouching.
+SWEP.SpreadAddMove = nil -- Applied when speed is equal to walking speed.
+SWEP.SpreadAddMidAir = nil -- Applied when not touching the ground.
+SWEP.SpreadAddHipFire = nil -- Applied when not sighted.
+SWEP.SpreadAddSighted = nil -- Applied when sighted. Can be negative.
+SWEP.SpreadAddBlindFire = nil -- Applied when blind firing.
+SWEP.SpreadAddCrouch = nil -- Applied when crouching.
 
-SWEP.SpreadAddRecoil = 0 -- Applied per unit of recoil.
+SWEP.SpreadAddRecoil = nil -- Applied per unit of recoil.
 
 -- Limit the effect of recoil on modifiers to this much.
 -- Because the per shot modifier used to be broken and effectively had a limit of 1, it is set to 1 by default. You should probably set it higher.
@@ -548,6 +595,8 @@ SWEP.SwayMultSights = 0.5
 SWEP.AimDownSightsTime = 0.25 -- How long it takes to go from hip fire to aiming down sights.
 SWEP.SprintToFireTime = 0.25 -- How long it takes to go from sprinting to being able to fire.
 
+SWEP.MagnificationZoomSpeed = 1 -- Multiply how quickly the FOV adjusts itself when entering or exiting the sights, or when toggling from one sight to another.
+
 SWEP.NoSprintWhenLocked = false -- You cannot sprint while reloading with this gun
 
 SWEP.ReloadTime = 1
@@ -567,6 +616,8 @@ SWEP.SpeedMultMelee = 0.75
 SWEP.SpeedMultCrouch = 1
 SWEP.SpeedMultBlindFire = 1
 
+SWEP.NoInspect = nil -- Set to true if there are inspect animation present, but you do not want the ability to trigger them.
+
 -------------------------- MELEE
 
 SWEP.Bash = false
@@ -579,10 +630,12 @@ SWEP.PreBashTime = 0.5
 SWEP.PostBashTime = 0.5
 SWEP.BashDamageType = DMG_CLUB
 SWEP.BashDecal = "ManhackCut"
+SWEP.BashImpact = true -- Creates a Impact effect that leaves a bullet hole.
 
 SWEP.BashSpeed = 1
 
 SWEP.BashWhileSprint = false -- Unlike ShootWhileSprint, this will not require transitioning out of sprint state (and waiting the sprinttofire delay)
+SWEP.BashCancelsReload = nil -- If bashing should immediately cancel the reload
 
 SWEP.BashThirdArmAnimation = {
         rig = "models/weapons/arc9/lhik/c_thirdarm_pdw.mdl",
@@ -603,6 +656,7 @@ SWEP.PreBash2Time = 0.5
 SWEP.PostBash2Time = 0.5
 SWEP.Bash2DamageType = DMG_CLUB
 SWEP.Bash2Decal = "ManhackCut"
+SWEP.Bash2Impact = true
 
 SWEP.Bash2ThirdArmAnimation = {
     rig = "models/weapons/arc9/lhik/c_thirdarm_pdw.mdl",
@@ -621,6 +675,7 @@ SWEP.PreBackstabTime = 0.5
 SWEP.PostBackstabTime = 0.5
 SWEP.BackstabDamageType = DMG_CLUB
 SWEP.BackstabDecal = "ManhackCut"
+SWEP.BackstabImpact = true
 
 -------------------------- LOCKON
 
@@ -714,6 +769,18 @@ SWEP.MalfunctionMeanShotsToFail = 1000 -- The mean number of shots between malfu
 -- SWEP.Hook_BashHit(self, data) return end -- {tr, dmg}
 -- SWEP.Hook_PostReload(self) return end -- called after a reload successfully starts
 -- SWEP.Hook_EndReload(self) return end -- called after a reload loads ammo (ammo went in magazine)
+-- SWEP.Hook_SpecialHolsterLogic(self, data) return end -- { wep } return true to override holster logic, set a time, run funcs etc
+-- Example of replica of base logic:
+-- SWEP.Hook_SpecialHolsterLogic = function( wep, data )
+--     local animation = wep:PlayAnimation("holster", wep:GetProcessedValue("DeployTime", true, 1), true, false, nil, nil, true) or 0
+--     local aentry = wep:GetAnimationEntry(wep:TranslateAnimation("holster"))
+--     local alength = aentry.MinProgress or animation
+--     alength = alength * (aentry.Mult or 1)
+--     wep:SetHolsterTime(CurTime() + alength)
+--     return true
+-- end
+
+-- SWEP.CustomPoseParamsHandler = function(self, ent, iswm) end -- do stuff related to poseparams here (previously it was done in custom think but thanks to rubat think hook now runs in wrong order)
 
 -- SOUND NAMES FOR TRANSLATESOUND:
 -- install
@@ -851,7 +918,7 @@ SWEP.DistantShootSound = nil
 SWEP.DryFireSound = ""
 SWEP.DryFireSingleAction = false -- Play dryfire sound only once
 
-SWEP.FiremodeSound = "arc9/firemode.wav"
+SWEP.FiremodeSound = "arc9/firemode.ogg"
 SWEP.ToggleAttSound = {
     "arc9/toggles/flashlight_laser_toggle_on_01.ogg",
     "arc9/toggles/flashlight_laser_toggle_on_02.ogg",
@@ -861,22 +928,22 @@ SWEP.ToggleAttSound = {
 SWEP.EnterSightsSound = ""
 SWEP.ExitSightsSound = ""
 
-SWEP.EnterBipodSound = "arc9/bipod_down.wav"
-SWEP.ExitBipodSound = "arc9/bipod_up.wav"
+SWEP.EnterBipodSound = "arc9/bipod_down.ogg"
+SWEP.ExitBipodSound = "arc9/bipod_up.ogg"
 
 SWEP.EnterUBGLSound = ""
 SWEP.ExitUBGLSound = ""
 
 SWEP.MalfunctionSound = ""
 
-SWEP.MeleeHitSound = "arc9/melee_hitbody.wav"
-SWEP.MeleeHitWallSound = "arc9/melee_hitworld.wav"
-SWEP.MeleeSwingSound = "arc9/melee_miss.wav"
-SWEP.BackstabSound = "weapons/knife/knife_stab.wav"
+SWEP.MeleeHitSound = "arc9/melee_hitbody.ogg"
+SWEP.MeleeHitWallSound = "arc9/melee_hitworld.ogg"
+SWEP.MeleeSwingSound = "arc9/melee_miss.ogg"
+SWEP.BackstabSound = ")weapons/knife/knife_stab.wav"
 
-SWEP.BreathInSound = "arc9/breath_inhale.wav"
-SWEP.BreathOutSound = "arc9/breath_exhale.wav"
-SWEP.BreathRunOutSound = "arc9/breath_runout.wav"
+SWEP.BreathInSound = "arc9/breath_inhale.ogg"
+SWEP.BreathOutSound = "arc9/breath_exhale.ogg"
+SWEP.BreathRunOutSound = "arc9/breath_runout.ogg"
 
 SWEP.TriggerDownSound = ""
 SWEP.TriggerUpSound = ""
@@ -924,6 +991,7 @@ SWEP.RicochetSounds = ARC9.RicochetSounds
 SWEP.ShellCorrectPos = Vector(0, 0, 0)
 SWEP.ShellCorrectAng = Angle(0, 0, 0)
 SWEP.ShellVelocity = nil -- nothing for random, otherwise keep this 0 - 2
+SWEP.ShellAngleVelocity = nil -- mult for angular velocity
 SWEP.ShellTime = 0.5 -- Extra time these shells stay on the ground for.
 
 SWEP.IgnoreMuzzleDevice = false -- Do not use the attachment muzzle device, use QCA muzzle instead.
@@ -940,7 +1008,15 @@ SWEP.CamOffsetAng = Angle(0, 0, 0)
 
 SWEP.DoFireAnimation = true
 
+SWEP.FireInterruptInspect = false
+SWEP.SightsInterruptInspect = false
+
 SWEP.NoViewBob = false
+
+SWEP.BobSprintMult = 1 -- if your weapon have fancy sprint animation, layering procedural sprint on top of it may look bad,  so you might need to set this to 0.1
+SWEP.BobWalkMult = 1 -- same but for all non sprint actions
+
+-- SWEP.OneHandedSprint = true -- procedural one-hand sprint, the left hand is hidden during sprint
 
 -------------------------- VISUALS
 
@@ -948,6 +1024,7 @@ SWEP.BulletBones = { -- the bone that represents bullets in gun/mag
     -- [0] = "bulletchamber",
     -- [1] = "bullet1"
 }
+-- SWEP.BulletBonesSub1 = true -- if gun doesnt have chamber and all bulletsbones are in mag
 SWEP.CaseBones = {}
 -- Unlike BulletBones, these bones are determined by the missing bullet amount when reloading
 SWEP.StripperClipBones = {}
@@ -967,10 +1044,17 @@ SWEP.ReloadHideBoneTables = { -- works only with TPIK
 SWEP.ReloadHideBonesFirstPerson = false -- Set to true to enable HideBones even in first person.
 -- Come on, fix your damn animations!
 
+SWEP.ReloadPoseParameterTables = { -- Works very similarly to ReloadHideBoneTables
+    -- [1] = {"pose" = 0, "parameter" = 1, "value" = 0},
+    -- [2] = {"works" = 2, "like" = 3560, "this" = 0}
+}
+
 SWEP.PoseParameters = {} -- Poseparameters to manage. ["parameter"] = starting value.
+-- This doesn't do anything, by the way.
 -- Use animations to switch between different pose parameters.
 -- When an animation is being played that switches between pose parameters, those parameters are all set to 0 for the animation.
--- There are also different default pose parameters:
+
+-- The base manages these pose parameters:
 -- firemode (Changes based on Fire Mode. Don't use this if you have animated firemode switching.)
 -- sights (Changes based on sight delta)
 -- sprint (Changes based on sprint delta)
@@ -1030,12 +1114,16 @@ SWEP.SprintPos = nil
 SWEP.SprintAng = nil
 SWEP.SprintVerticalOffset = true -- Moves vm when looking up/down while sprinting (set to false if gun clips into camera)
 SWEP.ReloadNoSprintPos = true -- No sprintpos during reloads
+SWEP.SprintCancelsReload = nil -- If sprinting should immediately cancel the reload, and prevent reloading while sprinting
 
 SWEP.NearWallPos = nil
 SWEP.NearWallAng = nil
 
 SWEP.HolsterPos = Vector(0, 0, -5)
 SWEP.HolsterAng = Angle(0, -15, 25)
+
+SWEP.VManipOffsetPos = Vector(2, 1, -0.3)
+SWEP.VManipOffsetAng = Angle(0, 0, 10)
 
 SWEP.MovingMidPoint = {
     Pos = Vector(0, 0, 0),
@@ -1063,13 +1151,15 @@ SWEP.CustomizeRotateAnchor = Vector(21.5, -4.27, -5.23)
 SWEP.CustomizeSnapshotFOV = 90
 SWEP.CustomizeSnapshotPos = Vector(0, 0, 0)
 SWEP.CustomizeSnapshotAng = Angle(0, 0, 0)
-SWEP.CustomizeNoRotate = false
+SWEP.CustomizeNoRotate = nil
 
 SWEP.BipodPos = Vector(0, 0, 0)
 SWEP.BipodAng = Angle(0, 0, 0)
 
+SWEP.CantPeek = nil -- set to true if you dont want peeking on this gnu
 SWEP.PeekPos = Vector(-1.5, 3, -4.5)
 SWEP.PeekAng = Angle(0, 0.4, -35)
+SWEP.NoPeekCrosshair = nil -- Not displays peek crosshair even if its enabled
 
 SWEP.HeightOverBore = 1
 
@@ -1117,6 +1207,11 @@ SWEP.TTTWeight = 100
 
 -- Use a different ammo type in TTT
 SWEP.TTTAmmoType = nil
+
+-------------------------- Aim Assist
+
+SWEP.NoAimAssist = nil -- Disable this weapon from utilizing aim assist.
+SWEP.AimAssistRange = nil -- Overrides how much range, in Hammer Units, the Aim Assist has. By default, Aim Assist uses the Maximum Range value of the weapon.
 
 -------------------------- ATTACHMENTS
 
@@ -1370,20 +1465,16 @@ SWEP.Animations = {
     --             mag = 100, -- with magnitude whatever this is
     --             ind = 0, -- change bodygroup,
     --             bg = 0, -- nil to reset
-    --             pp = "", -- pose parameter name
-    --             ppv = 0, -- pose parameter value, set to nil to reset
+    --             ppi = 1, -- reloadposeparameters table, 0 for none, works just like reloadhidebones
     --             hide = 1, -- hide reloadhidebonetables table, 0 for none
     --             fl = 0, -- sound flags
     --             dsp = 0, -- dsp preset
     --         }
     --     },
-    --     PoseParamChanges = { -- pose parameters to change after this animation is done.
-    --         ["selector"] = 1 -- an application might be to change firemodes.
-    --     }, -- relevant pose parameters will be set to default values while the animation is playing, so make sure you take that into consideration for animating.
     --     MagSwapTime = 0.5, -- in seconds, how long before the new magazine replaces the old one. For SWEP.BulletBones
     --     NoMagSwap = false, -- don't bother with above
     --     MinProgress = 0.9, -- seconds that must pass before the reload is considered done
-    --     FireASAP = false, -- allowes to shoot right after clip anim was "done" with MinProgress
+    --     FireASAP = false, -- allowes to shoot right after clip anim was "done" with MinProgress; set to number if you want to control anim lock time while keeping minprogress same
     --     RestoreAmmo = 0, -- Restores ammunition to clip
     --     DumpAmmo = false, -- Dump clip on reload
     --     NoStatAffectors = false, -- do not adjust animation length based on stats (sprint to fire time, aim down sights time)
@@ -1413,6 +1504,8 @@ SWEP.Secondary.Automatic = false
 SWEP.Secondary.Ammo = "none"
 
 SWEP.DrawCrosshair = true
+
+SWEP.FMHintTime = 0
 
 SWEP.ARC9 = true
 
@@ -1464,6 +1557,7 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 6, "SprintAmount")
     self:NetworkVar("Float", 7, "LastMeleeTime")
     self:NetworkVar("Float", 8, "TriggerDelay")
+    self:NetworkVar("Float", 9, "ReloadTime")
     self:NetworkVar("Float", 10, "ReloadFinishTime")
     self:NetworkVar("Float", 11, "SightAmount")
     self:NetworkVar("Float", 12, "HeatAmount")
@@ -1472,7 +1566,7 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 15, "IKTimeLineStart")
     self:NetworkVar("Float", 16, "IKTime")
     self:NetworkVar("Float", 17, "HolsterTime")
-    self:NetworkVar("Float", 18, "BlindFireCornerAmount")
+    self:NetworkVar("Float", 18, "CycleFinishTime")
     self:NetworkVar("Float", 19, "EnterBipodTime")
     self:NetworkVar("Float", 20, "Breath")
     self:NetworkVar("Float", 21, "SequenceCycle")
@@ -1480,7 +1574,7 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Float", 23, "LastHolsterTime")
     self:NetworkVar("Float", 24, "GrenadePrimedTime")
     self:NetworkVar("Float", 25, "LockOnStartTime")
-    self:NetworkVar("Float", 26, "LeanAmount")
+    -- self:NetworkVar("Float", 26, "LeanAmount")
     self:NetworkVar("Float", 27, "NearWallAmount")
     self:NetworkVar("Float", 28, "ReadyTime")
 
@@ -1491,11 +1585,12 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Int", 4, "NthReload")
     self:NetworkVar("Int", 5, "MultiSight")
     self:NetworkVar("Int", 6, "SequenceProxy")
-    -- self:NetworkVar("Int", 6, "BlindFireDirection")
     self:NetworkVar("Int", 7, "HideBoneIndex")
     self:NetworkVar("Int", 8, "SequenceIndex")
-    self:NetworkVar("Int", 9, "LeanState")
+    -- self:NetworkVar("Int", 9, "LeanState")
     self:NetworkVar("Int", 10, "LastLoadedRounds")
+    self:NetworkVar("Int", 11, "PoseParameterIndex")
+    self:NetworkVar("Int", 12, "ReloadAmount")
 
     self:NetworkVar("Bool", 0, "Customize")
     self:NetworkVar("Bool", 1, "Reloading")
@@ -1509,7 +1604,6 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 9, "EmptyReload")
     self:NetworkVar("Bool", 10, "InSights")
     self:NetworkVar("Bool", 11, "PrimedAttack")
-    -- self:NetworkVar("Bool", 12, "BlindFire")
     self:NetworkVar("Bool", 12, "Bash2")
     self:NetworkVar("Bool", 13, "NeedsCycle")
     self:NetworkVar("Bool", 14, "Bipod")
@@ -1525,6 +1619,9 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 24, "GrenadeRecovering")
     self:NetworkVar("Bool", 25, "LockedOn")
     self:NetworkVar("Bool", 26, "MidMeleeAttack")
+    self:NetworkVar("Bool", 27, "DoAFastDraw")
+    self:NetworkVar("Bool", 28, "NoPresets")
+    -- self:NetworkVar("Bool", 12, "BlindFire")
     -- self:NetworkVar("Bool", 15, "TraversalSprint")
 
     self:NetworkVar("Angle", 0, "FreeAimAngle")
@@ -1583,14 +1680,14 @@ function SWEP:SetupDataTables()
     self:SetIKTimeLineStart(0)
     self:SetIKTime(0)
     self:SetHolsterTime(0)
-    self:SetBlindFireCornerAmount(0)
+    -- self:SetBlindFireCornerAmount(0)
     self:SetEnterBipodTime(0)
     self:SetSequenceCycle(0)
     self:SetSequenceSpeed(0)
     self:SetLastHolsterTime(0)
     self:SetGrenadePrimedTime(0)
     self:SetLockOnStartTime(0)
-    self:SetLeanAmount(0)
+    -- self:SetLeanAmount(0)
     self:SetNearWallAmount(0)
     self:SetReadyTime(0)
 end

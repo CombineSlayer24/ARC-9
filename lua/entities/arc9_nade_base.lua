@@ -85,7 +85,7 @@ if SERVER then
                 local dmginfo = DamageInfo()
                 dmginfo:SetDamageType(DMG_GENERIC)
                 dmginfo:SetDamage(10)
-                dmginfo:SetAttacker(self:GetOwner())
+                if IsValid(self:GetOwner()) then dmginfo:SetAttacker(self:GetOwner()) end
                 dmginfo:SetInflictor(self)
                 dmginfo:SetDamageForce(data.OurOldVelocity * 0.5)
                 tgt:TakeDamageInfo(dmginfo)
@@ -168,5 +168,9 @@ if SERVER then
 else
     function ENT:Draw()
         self:DrawModel()
+    end
+
+    function ENT:DrawTranslucent(flags) -- doesn't draw wtf? or this is something with my addons
+        self:Draw(flags)    -- fix from wiki anyway
     end
 end

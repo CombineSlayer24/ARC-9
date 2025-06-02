@@ -58,11 +58,14 @@ function SWEP:SwitchFiremode()
 end
 
 function SWEP:SetFiremodePose(wm)
+    if SERVER then return end
     local vm = self:GetVM()
 
     if wm then vm = self:GetWM() end
 
     if !vm then return end
+
+    if self.CustomPoseParamsHandler then self:CustomPoseParamsHandler(vm, wm) end
 
     local pp = self:GetFiremode()
 
@@ -90,7 +93,7 @@ end
 
 function SWEP:GetCurrentFiremode()
     if self:GetUBGL() then
-        return self:GetProcessedValue("UBGLFiremode")
+        return self:GetProcessedValue("UBGLFiremode", true)
     end
 
     mode = self:GetCurrentFiremodeTable().Mode
@@ -112,6 +115,8 @@ function SWEP:GetCurrentFiremodeTable()
 end
 
 function SWEP:ToggleSafety(onoff)
+    if self.CantSafety then return end
+
     if onoff == nil then
         onoff = !self:GetSafe()
     end
@@ -137,6 +142,9 @@ function SWEP:ToggleSafety(onoff)
 end
 
 function SWEP:ThinkFiremodes()
+
+	-- if CurTime() < self.FMHintTime +1 then return end
+
     if self:GetOwner():KeyPressed(IN_ZOOM) and self:GetOwner():KeyDown(IN_USE) then
         self:ToggleSafety()
         return
@@ -148,16 +156,17 @@ function SWEP:ThinkFiremodes()
 end
 
 function SWEP:GetFiremodeName()
-    if self:GetUBGL() then
-        return self:GetProcessedValue("UBGLFiremodeName")
-    end
+    -- if self:GetUBGL() then
+        -- return self:GetProcessedValue("UBGLFiremodeName", true)
+    -- end
+	local ubgltext = self:GetProcessedValue("UBGLFiremodeName", true)
 
     local arc9_mode = self:GetCurrentFiremodeTable()
 
     local firemode_text = "UNKNOWN"
 
     if arc9_mode.PrintName then
-        firemode_text = arc9_mode.PrintName
+        firemode_text = ARC9:GetPhrase(arc9_mode.PrintName) or arc9_mode.PrintName
     else
         if arc9_mode.Mode == 1 then
             firemode_text = ARC9:GetPhrase("hud.firemode.single")
@@ -169,6 +178,10 @@ function SWEP:GetFiremodeName()
             firemode_text = tostring(arc9_mode.Mode) .. "-" .. ARC9:GetPhrase("hud.firemode.burst")
         end
     end
+
+	if self:GetUBGL() then
+		firemode_text = ARC9:GetPhrase(ubgltext) or ubgltext
+	end
 
     if self:GetSafe() then
         firemode_text = ARC9:GetPhrase("hud.firemode.safe")

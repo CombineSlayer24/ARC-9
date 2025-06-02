@@ -498,7 +498,7 @@ function SWEP:DevStuffCrosshair()
 
     local len = 256
     surface.SetDrawColor(255, 50, 50, 200)
-    surface.DrawLine(x, y - len, x, y + len - 48)
+    surface.DrawLine(x, y - len + 24, x, y + len - 48)
     surface.DrawLine(x - len, y, x + len, y)
 
     local spread_val = math.max(0, self:GetProcessedValue("Spread"))
@@ -506,25 +506,52 @@ function SWEP:DevStuffCrosshair()
     surface.DrawCircle(x, y, spread, 255, 255, 255, 255)
     surface.DrawCircle(x, y, spread + 0.5, 255, 255, 255, 100)
 
+    local range_txt = math.Round(dist * ARC9.HUToM, 1) .. "m"
+    local range2_txt = math.Round(self:GetDamageDeltaAtRange(dist) * 100) .. "%"
+    if self:GetProcessedValue("SweetSpot", true) then
+        range2_txt = range2_txt .. " | " .. math.Round(self:GetSweetSpotDeltaAtRange(dist) * 100) .. "% (SweetSpot)"
+    end
+	
+    local aa_txt = "AIM ASSIST (%s%% INTENSITY)"
+    -- local aa_txt = "AIM ASSIST (%.2f)"
+	local aa_text = string.format(aa_txt, math.Clamp( math.Round(100 - self:GetDamageDeltaAtRange(dist) * 200), 1, 100))
+	
+	local function animationtype()
+		local text = "ANIMATION"
+		local function animname(anim)
+			return string.find(self:GetIKAnimation() or "", anim)
+		end
 
+		if animname("reload") then text = "RELOAD" end
+		if animname("dryfire") then text = "DRYFIRE" end
+
+		return text
+	end
 
     local state_txt = "READY"
     local state2_txt = ""
-    if self:GetNextPrimaryFire() > time then
+    if self:GetHolsterTime() > 0 then
+        state_txt = "HOLSTER"
+        state2_txt = string.format("%dms", (self:GetHolsterTime() - time)*1000)
+    elseif self:GetNextPrimaryFire() > time then
         state_txt = "FIRE"
-        state2_txt = string.format("%.2f", self:GetNextPrimaryFire() - time)
+        state2_txt = string.format("%.0fms", (self:GetNextPrimaryFire() - time)*1000)
     elseif self:GetNextSecondaryFire() > time then
         state_txt = "ALTFIRE"
-        state2_txt = string.format("%.2f", self:GetNextSecondaryFire() - time)
-    elseif self:GetAnimLockTime() > time then
-        state_txt = "ANIMATION"
-        state2_txt = string.format("%.2f", self:GetAnimLockTime() - time)
+        state2_txt = string.format("%dms", (self:GetNextSecondaryFire() - time)*1000)
     elseif self:GetPrimedAttack() then
         state_txt = "TRIGGER"
-        state2_txt = string.format("%.2f", math.max(0, self:GetTriggerDelay() - time))
-    elseif self:GetHolsterTime() > 0 then
-        state_txt = "HOLSTER"
-        state2_txt = string.format("%.2f", self:GetHolsterTime() - time)
+        state2_txt = string.format("%dms", math.max(0, self:GetTriggerDelay() - time)*1000)
+    elseif self:GetAnimLockTime() > time then
+        state_txt = animationtype()
+        state2_txt = string.format("%dms", (self:GetAnimLockTime() - time)*1000)
+    elseif self:GetNeedsCycle() then
+        state_txt = "CYCLING"
+        if self:GetCycleFinishTime() == 0 then
+            state2_txt = "waiting..."
+        else
+            state2_txt = string.format("%dms", (self:GetCycleFinishTime() - time)*1000)
+        end
     elseif self:GetSprintAmount() > 0 then
         state_txt = "SPRINT"
         state2_txt = string.format("%d%%", self:GetSprintAmount() * 100)
@@ -543,11 +570,131 @@ function SWEP:DevStuffCrosshair()
     local num = math.floor(self:GetProcessedValue("Num"))
     local damage_txt = math.Round(self:GetDamageAtRange(dist)) .. (num > 1 and ("×" .. tostring(num)) or "") .. " DMG"
 
+	local function activeaffectors()
+	-- Which stat additives are currently active, for example "Moving", "Airborne", "Sight", etc.
+		local text = ""
+		local ENTITY = FindMetaTable("Entity")
+		local PLAYER = FindMetaTable("Player")
+		local playerCrouching = PLAYER.Crouching
+		local playerGetWalkSpeed = PLAYER.GetWalkSpeed
+		local playerSprinting = PLAYER.IsSprinting
+		local entityOwner = ENTITY.GetOwner
+		local entityOnGround = ENTITY.OnGround
+		local entityIsValid = ENTITY.IsValid
+		local entityGetMoveType = ENTITY.GetMoveType
+		local entityIsPlayer = ENTITY.IsPlayer
+		local entityGetAbsVelocity = ENTITY.GetAbsVelocity
+		local WEAPON = FindMetaTable("Weapon")
+		local weaponClip1 = WEAPON.Clip1
+		local weaponClip2 = WEAPON.Clip2
+		local weaponGetNextPrimaryFire = WEAPON.GetNextPrimaryFire
+		local arcGetValue = self.GetValue
+		local vectorLength = FindMetaTable("Vector").Length
+        local ubgl = self.dt.UBGL
+		local sightAmount = self.dt.SightAmount
+
+		if not ownerIsNPC and entityIsValid(owner) then
+            local ownerOnGround = entityOnGround(owner)
+
+            if not ownerOnGround or entityGetMoveType(owner) == MOVETYPE_NOCLIP then
+				text = text .. " MidAir"
+            end
+
+            if ownerOnGround and playerCrouching(owner) then
+				text = text .. " Crouch"
+            end
+			
+			if ownerOnGround and playerSprinting(owner) and !self:StillWaiting() then
+				text = text .. " Sprint"
+			end
+        end
+			
+        if self.dt.Reloading then
+			text = text .. " Reload"
+        end
+
+        if self.dt.BurstCount == 0 then
+			text = text .. " FirstShot"
+        end
+
+        if self.dt.GrenadeTossing then
+			text = text .. " Toss"
+        end
+
+        if weaponClip1(self) == 0 then
+			text = text .. " Empty"
+        end
+
+        if not ubgl and arcGetValue(self, "Silencer") then
+			text = text .. " Silenced"
+        end
+
+        if ubgl then
+			text = text .. " UBGL"
+
+            if weaponClip2(self) == 0 then
+				text = text .. " EmptyUBGL"
+            end
+        end
+		
+        if self.dt.NthShot % 2 == 0 then
+			text = text .. " EvenShot"
+        else
+			text = text .. " OddShot"
+        end
+
+        if self.dt.NthReload % 2 == 0 then
+			text = text .. " EvenReload"
+        else
+			text = text .. " OddReload"
+        end
+
+        if self.dt.Bipod then
+			text = text .. " Bipod"
+        end
+
+		if sightAmount >= 1 then
+			text = text .. " Sights"
+		else
+			text = text .. " HipFire"
+		end
+
+		local getlastmeleetime = self.dt.LastMeleeTime
+		if getlastmeleetime < CurTime() then
+			local pft = CurTime() - getlastmeleetime
+			local d = pft / (arcGetValue(self, "PreBashTime") + arcGetValue(self, "PostBashTime"))
+			d = 1 - math.Clamp(d, 0, 1)
+			
+			if d > 0 then
+				text = text .. " Melee"
+			end
+		end
+		
+		
+		local spd = self.PV_Move
+		local maxspd = entityIsPlayer(owner) and playerGetWalkSpeed(owner) or 250
+		
+		spd = math.min(vectorLength(entityGetAbsVelocity(owner)), maxspd) / maxspd
+		self.PV_Move = spd
+		
+		if spd > 0 then
+			text = text .. " Move"
+		end
+		
+		return text
+	end
+	
     surface.SetFont("ARC9_DevCrosshair")
     local sway_w = surface.GetTextSize(sway_txt)
     local damage_w = surface.GetTextSize(damage_txt)
     local state_w = surface.GetTextSize(state_txt)
     local state2_w = surface.GetTextSize(state2_txt)
+    local range_w = surface.GetTextSize(range_txt)
+    local range2_w = surface.GetTextSize(range2_txt)
+    local aa_w = surface.GetTextSize(aa_txt)
+
+	local affectortext = "Active Affectors:" .. activeaffectors()
+	local affectorcon = GetConVar("arc9_dev_show_affectors"):GetBool()
 
     surface.SetTextColor(0, 0, 0, 255)
 
@@ -563,7 +710,20 @@ function SWEP:DevStuffCrosshair()
     surface.DrawText(state_txt)
     surface.SetTextPos(x - state2_w / 2 + 2, y + len - 8 + 2)
     surface.DrawText(state2_txt)
-
+    surface.SetTextPos(x - range_w / 2 + 2, y - len - 40 + 2)
+    surface.DrawText(range_txt)
+    surface.SetTextPos(x - range2_w / 2 + 2, y - len - 12 + 2)
+    surface.DrawText(range2_txt)
+    surface.SetTextPos(x - aa_w / 2 + 2, y - len - 62 + 2)
+	if owner.ARC9_AATarget != nil and GetConVar("arc9_crosshair_target"):GetBool() then
+		surface.DrawText(aa_text)
+	end
+	
+    surface.SetTextPos(x + 5, y - 240)
+	if affectorcon then
+		surface.DrawText(affectortext)
+	end
+	
     surface.SetTextColor(255, 255, 255, 255)
 
     surface.SetTextPos(x - len, y)
@@ -578,7 +738,40 @@ function SWEP:DevStuffCrosshair()
     surface.DrawText(state_txt)
     surface.SetTextPos(x - state2_w / 2, y + len - 8)
     surface.DrawText(state2_txt)
+    surface.SetTextPos(x - range_w / 2, y - len - 40)
+    surface.DrawText(range_txt)
+    surface.SetTextPos(x - range2_w / 2, y - len - 12)
+    surface.DrawText(range2_txt)
+    surface.SetTextPos(x - range2_w / 2, y - len - 12)
+    surface.DrawText(range2_txt)
+    surface.SetTextPos(x - aa_w / 2, y - len - 62)
+	if owner.ARC9_AATarget != nil and GetConVar("arc9_crosshair_target"):GetBool() then
+		surface.DrawText(aa_text)
+	end
 
+    surface.SetTextPos(x + 5 - 2, y - 240 - 2)
+	if affectorcon then
+		surface.DrawText(affectortext)
+	end
+	
+    surface.SetTextPos(x + 5, y - 240 + 40 + 2)
+    surface.SetTextColor(0, 0, 0, 255)
+	surface.DrawText( "Mouse Sens: " .. string.format("%d%%", self:AdjustMouseSensitivity() * 100 ))
+	
+    surface.SetTextPos(x + 5 - 2, y - 240 + 40)
+    surface.SetTextColor(255, 255, 255, 255)
+	surface.DrawText( "Mouse Sens: " .. string.format("%d%%", self:AdjustMouseSensitivity() * 100 ))
+	
+	-- if self:GetReloading() then
+		-- surface.SetTextPos(x + 5, y - 200 + 40 + 2)
+		-- surface.SetTextColor(0, 0, 0, 255)
+		-- surface.DrawText( "Is Reloading!" )
+		
+		-- surface.SetTextPos(x + 5 - 2, y - 200 + 40)
+		-- surface.SetTextColor(255, 255, 255, 255)
+		-- surface.DrawText( "Is Reloading!" )
+	-- end
+	
     local sgspread_txt = ""
     if self:GetProcessedValue("UseDispersion") then
         local sgspread_val = math.max(0, self:GetProcessedValue("DispersionSpread"))

@@ -1,4 +1,4 @@
-ARC9OLDKilliconDraw = ARC9OLDKilliconDraw or killicon.Draw
+ARC9OLDKilliconDraw = ARC9OLDKilliconDraw or killicon.Render or killicon.Draw
 local killicons_cachednames = {}
 local killicons_cachedicons = {}
 local killicons_cachedtimes = {}
@@ -19,8 +19,8 @@ ARC9NEWKillicondraw = function(x, y, name, alpha)
 
     if killicons_cachednames[name] == true then
         local w, h = 96, 96
-        x = x - 48
-        y = y - 34
+        x = x - (killicon.Render and 25 or 48) -- killiocn render is only on x64 and they changed offsets or something
+        y = y - (killicon.Render and 25 or 34)
 
         cam.Start2D()
 
@@ -33,18 +33,18 @@ ARC9NEWKillicondraw = function(x, y, name, alpha)
         end
 
         if !selecticon then -- not cached
-            local filename = ARC9.PresetPath .. name .. "_icon." .. ARC9.PresetIconFormat
-            -- local loadedmat = Material("data/" .. filename, "smooth")
-            local loadedmat
+            local filename = ARC9.PresetPath .. (wpn.SaveBase or name) .. "_icon." .. ARC9.PresetIconFormat
+            local loadedmat = Material("data/" .. filename, "smooth")
+            -- local loadedmat
 
-            -- if !loadedmat or loadedmat:IsError() then -- there is no fucking icon in data folder!!!!
+            if !loadedmat or loadedmat:IsError() then -- there is no fucking icon in data folder!!!!
                 local found
 
                 if game.SinglePlayer() then -- trying find in your hands
                     local probablythegun = LocalPlayer():GetActiveWeapon()
 
                     if IsValid(probablythegun) and probablythegun:GetClass() == name then
-                        loadedmat = probablythegun:DoIconCapture()
+                        loadedmat = probablythegun:DoIconCapture(true)
                         found = true
                     end
                 end
@@ -52,13 +52,13 @@ ARC9NEWKillicondraw = function(x, y, name, alpha)
                 if !found then -- nah, bruteforcing all ents until we find gun with same classname
                     for _, v in ipairs(ents.GetAll()) do
                         if v:GetClass() == name then
-                            loadedmat = v:DoIconCapture()
+                            loadedmat = v:DoIconCapture(true)
                         end
                     end
                 end
-            -- end
-
-            loadedmat = Material("data/" .. filename, "smooth")
+            end
+            
+            loadedmat = loadedmat or Material("data/" .. filename, "smooth")
 
             killicons_cachedicons[name] = loadedmat
             selecticon = loadedmat
@@ -78,5 +78,6 @@ ARC9NEWKillicondraw = function(x, y, name, alpha)
 end
 
 timer.Simple(5, function() -- to make Autoicons addon not override our stuff
+    killicon.Render = ARC9NEWKillicondraw
     killicon.Draw = ARC9NEWKillicondraw
 end)
