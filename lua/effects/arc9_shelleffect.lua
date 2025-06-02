@@ -178,7 +178,9 @@ function EFFECT:PhysicsCollide(colData)
     self.VMContext = false
     self:SetNoDraw(false)
 
-    sound.Play(self.Sounds[math.random(#self.Sounds)], self:GetPos(), 75, self.ShellPitch, 1, CHAN_WEAPON)
+    if math.random(1, 2) == 1 then
+        sound.Play(self.Sounds[math.random(#self.Sounds)], self:GetPos(), 65, self.ShellPitch, 1, CHAN_WEAPON) // old 75
+    end
 
     self.AlreadyPlayedSound = true
 end
